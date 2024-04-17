@@ -9,7 +9,7 @@ import boletasRoutes from './routes/boletas.routes.js';
 const app = express();
 
 app.use(cors({
-  origin: 'https://frontendtjboletas.onrender.com',
+  origin: 'http://localhost:5173',
   credentials: true,
 }));
 app.use(morgan('dev'));
