@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 import boletasRoutes from './routes/boletas.routes.js';
+import reportmaqRoutes from './routes/reportmaq.routes.js';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(cookieParser());
 
 app.use('/api',auth2Routes);
 app.use('/api',boletasRoutes);
+app.use('/api',reportmaqRoutes);
 
 
 
