@@ -5,12 +5,13 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 import boletasRoutes from './routes/boletas.routes.js';
-import reportmaqRoutes from './routes/reportmaq.routes.js';
+/* import reportmaqRoutes from './routes/reportmaq.routes.js';
+ */import transporteRoutes from './routes/transporte.routes.js';
 
 const app = express();
 
 app.use(cors({
-  origin: 'https://boletas.transportej.com',
+  origin: 'http://localhost:5173',
   credentials: true,
 }));
 app.use(morgan('dev'));
@@ -20,8 +21,11 @@ app.use(cookieParser());
 
 app.use('/api',auth2Routes);
 app.use('/api',boletasRoutes);
-app.use('/api',reportmaqRoutes);
+app.use('/api',transporteRoutes);
 
+
+/* app.use('/api',reportmaqRoutes);
+ */
 
 
 export default app;
