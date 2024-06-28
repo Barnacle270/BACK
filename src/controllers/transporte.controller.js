@@ -1,5 +1,6 @@
 
-import Transporte from "../models//transporte.model.js";
+import e from "express";
+import Transporte from "../models/transporte.model.js";
 
 
  export const getTransporte = async (req, res) => {
@@ -11,11 +12,10 @@ import Transporte from "../models//transporte.model.js";
   }
 }
 
-
 export const createTransporte = async (req, res) => {
   try {
     const {
-      fecha,
+      fechat,
       cliente,
       puntoPartida,
       puntoDestino,
@@ -34,7 +34,7 @@ export const createTransporte = async (req, res) => {
     } = req.body;
 
     const newTransporte = new Transporte({
-      fecha,
+      fechat,
       cliente,
       puntoPartida,
       puntoDestino,

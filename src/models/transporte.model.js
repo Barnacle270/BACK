@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const transporteSchema = new mongoose.Schema(
   {
-    fecha: {
+    fechat: {
       type: String,
       required: true,
     },

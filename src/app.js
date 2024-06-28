@@ -6,7 +6,10 @@ import cors from 'cors';
 
 import boletasRoutes from './routes/boletas.routes.js';
 /* import reportmaqRoutes from './routes/reportmaq.routes.js';
- */import transporteRoutes from './routes/transporte.routes.js';
+ */
+import transporteRoutes from './routes/transporte.routes.js';
+import clienteRoutes from './routes/cliente.routes.js';
+import camionesRoutes from './routes/camiones.routes.js';
 
 const app = express();
 
@@ -22,10 +25,10 @@ app.use(cookieParser());
 app.use('/api',auth2Routes);
 app.use('/api',boletasRoutes);
 app.use('/api',transporteRoutes);
-
+app.use('/api',clienteRoutes);
+app.use('/api',camionesRoutes);
 
 /* app.use('/api',reportmaqRoutes);
  */
-
 
 export default app;

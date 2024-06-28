@@ -7,8 +7,8 @@ import { registerSchema, loginSchema } from '../schemas/auth2.schema.js';
 
 const router = Router();
 
-router.post('/v2/register', validateSchema(registerSchema), register);
-router.post('/v2/login', validateSchema(loginSchema), login);
+router.post('/v2/register', register);
+router.post('/v2/login', login);
 router.get('/v2/verify', verifyToken);
 router.get('/v2/profile', profile);
 
