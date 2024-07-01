@@ -11,9 +11,7 @@ router.post('/v2/register', register);
 router.post('/v2/login', login);
 router.get('/v2/verify', verifyToken);
 router.get('/v2/profile', profile);
-
 router.post('/v2/logout', logout);
-
 
 //router.get('/v2/profile', authRequired, profile);
 

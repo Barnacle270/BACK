@@ -61,11 +61,9 @@ const transporteSchema = new mongoose.Schema(
     },
     planilla: {
       type: String,
-      required: true,
     },
     combustible: {
       type: String,
-      required: true,
     },
   },
   {

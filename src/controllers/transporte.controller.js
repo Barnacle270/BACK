@@ -1,9 +1,8 @@
 
-import e from "express";
 import Transporte from "../models/transporte.model.js";
 
 
- export const getTransporte = async (req, res) => {
+export const getTransporte = async (req, res) => {
   try {
     const transporte = await Transporte.find();
     res.json(transporte);
@@ -51,8 +50,6 @@ export const createTransporte = async (req, res) => {
       planilla,
       combustible,
     });
-
-    console.log(newTransporte);
 
     const savedTransporte = await newTransporte.save();
 
