@@ -18,8 +18,6 @@ const validationTransporte = () => {
     check('tipoServicio').notEmpty().withMessage('El campo tipo de servicio esta vacio'),
     check('detalle').notEmpty().withMessage('El campo detalle esta vacio'),
     check('almacenDev').notEmpty().withMessage('El campo almacen de devolucion esta vacio'),
-    check('comprobanteDev').notEmpty().withMessage('El campo comprobande de devolucion esta vacio'),
-    check('estado').notEmpty().withMessage('El campo estado esta vacio'),
     check('turno').notEmpty().withMessage('El campo turno esta vacio'),
 
     (req, res, next) => {

@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
+import { date } from "zod";
 
 const transporteSchema = new mongoose.Schema(
   {
     fechat: {
-      type: String,
+      type: Date,
       required: true,
     },
 
@@ -49,11 +51,9 @@ const transporteSchema = new mongoose.Schema(
     },
     comprobanteDev: {
       type: String,
-      required: true,
     },
     estado: {
       type: String,
-      required: true,
     },
     turno: {
       type: String,
@@ -71,23 +71,6 @@ const transporteSchema = new mongoose.Schema(
   },
 );
 
-/* 
-"fecha":"25/06/2024",
-"cliente": "SAN FERNANDO",
-"puntoPartida": "LURIN",
-"puntoDestino": "LURIN",
-"guiaRemitente": "123456",
-"guiaTransportista": "123456",
-"placa": "123456",
-"conductor": "123456",
-"tipoServicio": "123456",
-"detalle": "123456",
-"almacenDev": "123456",
-"comprobanteDev": "123456",
-"estado": "123456",
-"turno": "123456",
-"planilla": "123456",
-"combustible": "123456",
-*/
+transporteSchema.plugin(mongoosePaginate);
 
 export default mongoose.model("Transporte", transporteSchema);
