@@ -62,13 +62,14 @@ export const login = async (req, res) => {
     const { dni, password } = req.body;
     const userFound = await Employee.findOne({ dni });
 
-    if (!userFound) {
-      return res.status(400).json({ errors: ["El dni o la contraseña son incorrectos"] });
-    }
+    if (!userFound)
+      return res.status(400).json(["El dni o la contraseña son incorrectos"],
+      );
 
     const isMatch = await bcrypt.compare(password, userFound.password);
     if (!isMatch) {
-      return res.status(400).json({ errors: ["El dni o la contraseña son incorrectos"] });
+      return res.status(400).json(["El dni o la contraseña son incorrectos"],
+      );
     }
 
     const token = await createAccessToken({
@@ -78,7 +79,7 @@ export const login = async (req, res) => {
     });
 
     res.cookie("token", token, {
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production",      secure: true,
       sameSite: "none",
     });
 
@@ -92,6 +93,8 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+
 
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
