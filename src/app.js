@@ -15,7 +15,7 @@ import conductorRoutes from './routes/conductor.routes.js';
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://boletas.transportej.com',
   credentials: true,
 }));
 app.use(morgan('dev'));
