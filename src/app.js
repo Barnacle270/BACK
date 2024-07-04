@@ -17,6 +17,7 @@ const app = express();
 app.use(cors({
   origin: 'http://servidor.transportej.com',
   credentials: true,
+  exposedHeaders: ['set-cookie']  
 }));
 app.use(morgan('dev'));
 app.use(express.json());
