@@ -39,8 +39,8 @@ export const register = async (req, res) => {
     });
 
     res.cookie("token", token, {
-      secure: true,
-      sameSite: "none",
+      secure: true, // Solo en producción con HTTPS
+      sameSite: "none", // Requiere HTTPS
     });
 
     res.json({
@@ -79,8 +79,8 @@ export const login = async (req, res) => {
     });
 
     res.cookie("token", token, {
-      secure: process.env.NODE_ENV === "production",      secure: true,
-      sameSite: "none",
+      secure: true, // Solo en producción con HTTPS
+      sameSite: "none", // Requiere HTTPS
     });
 
     res.json({
