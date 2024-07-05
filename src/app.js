@@ -15,7 +15,7 @@ import conductorRoutes from './routes/conductor.routes.js';
 const app = express();
 
 app.use(cors({
-  origin: 'https://servidor.transportej.com',
+  origin: 'http://localhost:5173',
   credentials: true,
   exposedHeaders: ['set-cookie']  
 }));
