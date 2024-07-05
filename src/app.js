@@ -5,8 +5,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 import boletasRoutes from './routes/boletas.routes.js';
-/* import reportmaqRoutes from './routes/reportmaq.routes.js';
- */
+/* import reportmaqRoutes from './routes/reportmaq.routes.js'; */
 import transporteRoutes from './routes/transporte.routes.js';
 import clienteRoutes from './routes/cliente.routes.js';
 import camionesRoutes from './routes/camiones.routes.js';
@@ -15,23 +14,21 @@ import conductorRoutes from './routes/conductor.routes.js';
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'http://localhost:5173', // Asegúrate de que esto coincida con el origen de tu frontend
   credentials: true,
   exposedHeaders: ['set-cookie']  
 }));
+
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-
-app.use('/api',auth2Routes);
-app.use('/api',boletasRoutes);
-app.use('/api',transporteRoutes);
-app.use('/api',clienteRoutes);
-app.use('/api',camionesRoutes);
-app.use('/api',conductorRoutes);
-
-/* app.use('/api',reportmaqRoutes);
- */
+app.use('/api', auth2Routes);
+app.use('/api', boletasRoutes);
+app.use('/api', transporteRoutes);
+app.use('/api', clienteRoutes);
+app.use('/api', camionesRoutes);
+app.use('/api', conductorRoutes);
+/* app.use('/api', reportmaqRoutes); */
 
 export default app;
