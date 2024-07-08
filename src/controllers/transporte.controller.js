@@ -134,6 +134,20 @@ export const deleteTransporte = async (req, res) => {
   }
 };
 
+// funcion para traer los transportes que tengan el estado "pendiente" y el tipo de servicio "servicio"
+export const getTransportePendiente = async (req, res) => {
+  try {
+    const transportes = await Transporte.find({
+      estado: "PENDIENTE",
+      tipoServicio: "SERVICIO",
+    });
+    res.json(transportes);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 export const exportTransporteExcel = async (req, res) => {
   try {

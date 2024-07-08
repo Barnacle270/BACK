@@ -5,7 +5,8 @@ import {
   exportTransporteExcel,
   updateTransporte,
   getTransporteById,
-  deleteTransporte
+  deleteTransporte,
+  getTransportePendiente
 } from "../controllers/transporte.controller.js";
 import validationTransporte from "../schemas/transporte.schema.js";
 import Transporte from "../models/transporte.model.js";
@@ -54,6 +55,8 @@ router.post("/transporte/generar-excel", exportTransporteExcel);
 router.put("/transporte/:id", validationTransporte(), updateTransporte);
 
 router.delete("/transporte/:id", deleteTransporte);
+
+router.get("/devoluciones", getTransportePendiente);
 
 
 export default router;
