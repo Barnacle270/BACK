@@ -47,13 +47,13 @@ const transporteSchema = new mongoose.Schema(
     },
     almacenDev: {
       type: String,
-      required: true,
     },
     comprobanteDev: {
       type: String,
     },
     estado: {
       type: String,
+      default: "PENDIENTE",
     },
     turno: {
       type: String,

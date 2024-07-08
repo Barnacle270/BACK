@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { authRequired } from "../middlewares/validateToken.js";
-import { createTransporte, exportTransporteExcel } from "../controllers/transporte.controller.js";
+import {
+  createTransporte,
+  exportTransporteExcel,
+  updateTransporte,
+  getTransporteById,
+  deleteTransporte
+} from "../controllers/transporte.controller.js";
 import validationTransporte from "../schemas/transporte.schema.js";
 import Transporte from "../models/transporte.model.js";
 
@@ -13,11 +19,14 @@ router.get("/transporte", async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1; // Página solicitada
 
     // Ordenar por fecha descendente y realizar la paginación
-    const transporte = await Transporte.paginate({}, {
-      sort: { fechat: -1 }, // Ordena por fechat descendente
-      limit,
-      page
-    });
+    const transporte = await Transporte.paginate(
+      {},
+      {
+        sort: { fechat: -1 }, // Ordena por fechat descendente
+        limit,
+        page,
+      }
+    );
 
     res.json(transporte);
   } catch (error) {
@@ -27,10 +36,24 @@ router.get("/transporte", async (req, res) => {
   }
 });
 
+// Ruta para obtener un transporte por ID
+router.get("/transporte/:id", getTransporteById);
+
 // Ruta para crear transporte (requiere autenticación)
-router.post("/transporte", authRequired, validationTransporte(), createTransporte);
+router.post(
+  "/transporte",
+  authRequired,
+  validationTransporte(),
+  createTransporte
+);
 
 // Ruta para exportar transporte a Excel por rango de fechas
 router.post("/transporte/generar-excel", exportTransporteExcel);
+
+// actualiza un transporte
+router.put("/transporte/:id", validationTransporte(), updateTransporte);
+
+router.delete("/transporte/:id", deleteTransporte);
+
 
 export default router;
