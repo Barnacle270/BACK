@@ -130,6 +130,7 @@ export const logout = (req, res) => {
     sameSite: 'Lax', // Ajusta según tus necesidades
     expires: new Date(0)
   });
+  console.log('NODE_ENV:', process.env.NODE_ENV);
   return res.sendStatus(200);
 };
 
