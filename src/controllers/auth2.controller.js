@@ -91,15 +91,27 @@ export const login = async (req, res) => {
 };
 
 // VERIFICAR TOKEN
+// VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
-  if (!token) return res.sendStatus(401);
+  console.log('Verifying token:', token); // Log del token
+
+  if (!token) {
+    console.log('No token found');
+    return res.sendStatus(401);
+  }
 
   jwt.verify(token, TOKEN_SECRET, async (error, user) => {
-    if (error) return res.sendStatus(401);
+    if (error) {
+      console.log('Token verification error:', error.message);
+      return res.sendStatus(401);
+    }
 
     const userFound = await Employee.findById(user.id);
-    if (!userFound) return res.sendStatus(401);
+    if (!userFound) {
+      console.log('User not found');
+      return res.sendStatus(401);
+    }
 
     return res.json({
       id: userFound._id,
