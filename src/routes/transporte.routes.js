@@ -6,7 +6,9 @@ import {
   updateTransporte,
   getTransporteById,
   deleteTransporte,
-  getTransportePendiente
+  getTransportePendiente,
+  updateTransportependiente,
+  getTransportePendienteById
 } from "../controllers/transporte.controller.js";
 import validationTransporte from "../schemas/transporte.schema.js";
 import Transporte from "../models/transporte.model.js";
@@ -57,6 +59,12 @@ router.put("/transporte/:id", validationTransporte(), updateTransporte);
 router.delete("/transporte/:id", deleteTransporte);
 
 router.get("/devoluciones", getTransportePendiente);
+
+// updateTransportependiente
+router.put("/devoluciones/:id", updateTransportependiente);
+
+//getTransportePendienteById
+router.get("/devoluciones/:id", getTransportePendienteById);
 
 
 export default router;

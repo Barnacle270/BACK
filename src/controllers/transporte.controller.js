@@ -137,16 +137,57 @@ export const deleteTransporte = async (req, res) => {
 // funcion para traer los transportes que tengan el estado "pendiente" y el tipo de servicio "servicio"
 export const getTransportePendiente = async (req, res) => {
   try {
-    const transportes = await Transporte.find({
+    const devoluciones = await Transporte.find({
       estado: "PENDIENTE",
       tipoServicio: "SERVICIO",
     });
-    res.json(transportes);
+    res.json(devoluciones);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
+export const getTransportePendienteById = async (req, res) => {
+  try {
+    const devolucion = await Transporte.findById(req.params.id);
+    res.json(devolucion);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+export const updateTransportependiente = async (req, res) => {
+  try {
+    const {
+      fechaVen,
+      almacenDev,
+      comprobanteDev,
+      fechaDev,
+      conductorDev,
+      placaDev,
+      estado,
+
+    } = req.body;
+    const transportePendienteUpdated = await Transporte.findOneAndUpdate(
+      { _id: req.params.id },
+      {
+        fechaVen,
+        almacenDev,
+        comprobanteDev,
+        fechaDev,
+        conductorDev,
+        placaDev,
+        estado,
+      },
+      { new: true }
+    );
+    return res.json(transportePendienteUpdated);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 
 export const exportTransporteExcel = async (req, res) => {

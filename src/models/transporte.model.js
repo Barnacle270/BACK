@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
-import { date } from "zod";
 
 const transporteSchema = new mongoose.Schema(
   {
@@ -45,11 +44,25 @@ const transporteSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    fechaVen: {
+      type: Date,
+      default:"",
+    },
     almacenDev: {
       type: String,
     },
     comprobanteDev: {
       type: String,
+    },
+    fechaDev: {
+      type: Date,
+      default:"",
+    },
+    conductorDev: {
+      type: String,
+    },
+    placaDev: {
+      type: String, 
     },
     estado: {
       type: String,
