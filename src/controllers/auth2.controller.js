@@ -10,8 +10,7 @@ export const register = async (req, res) => {
 
   try {
     const userFound = await Employee.findOne({ dni });
-    if (userFound)
-      return res.status(400).json(["El DNI ya existe"]);
+    if (userFound) return res.status(400).json(["El DNI ya existe"]);
 
     // Hashing the password
     const passwordHash = await bcrypt.hash(password, 10);
@@ -36,7 +35,7 @@ export const register = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
-      sameSite: 'Lax', // Ajusta según tus necesidades
+      sameSite: 'None', // Asegúrate de que esto esté configurado como 'None'
       maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
     });
 
@@ -72,14 +71,13 @@ export const login = async (req, res) => {
       dni: userFound.dni,
     });
 
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-
+    console.log("NODE_ENV:", process.env.NODE_ENV);
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
-      sameSite: 'Lax', // Ajusta según tus necesidades
-      maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
+      secure: process.env.NODE_ENV === "production", // Solo en producción con HTTPS
+      sameSite: "None", // Asegúrate de que esto esté configurado como 'None'
+      maxAge: 24 * 60 * 60 * 1000, // 1 día en milisegundos
     });
 
     res.json({
@@ -94,25 +92,24 @@ export const login = async (req, res) => {
 };
 
 // VERIFICAR TOKEN
-// VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
-  console.log('Verifying token:', token); // Log del token
+  console.log("Verifying token:", token); // Log del token
 
   if (!token) {
-    console.log('No token found');
+    console.log("No token found");
     return res.sendStatus(401);
   }
 
   jwt.verify(token, TOKEN_SECRET, async (error, user) => {
     if (error) {
-      console.log('Token verification error:', error.message);
+      console.log("Token verification error:", error.message);
       return res.sendStatus(401);
     }
 
     const userFound = await Employee.findById(user.id);
     if (!userFound) {
-      console.log('User not found');
+      console.log("User not found");
       return res.sendStatus(401);
     }
 
@@ -127,11 +124,11 @@ export const verifyToken = async (req, res) => {
 
 // LOGOUT
 export const logout = (req, res) => {
-  res.cookie('token', '', {
+  res.cookie("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
-    sameSite: 'Lax', // Ajusta según tus necesidades
-    expires: new Date(0)
+    sameSite: 'None', // Asegúrate de que esto esté configurado como 'None'
+    maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
   });
   return res.sendStatus(200);
 };
