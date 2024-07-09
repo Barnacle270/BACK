@@ -72,6 +72,9 @@ export const login = async (req, res) => {
       dni: userFound.dni,
     });
 
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
@@ -130,7 +133,6 @@ export const logout = (req, res) => {
     sameSite: 'Lax', // Ajusta según tus necesidades
     expires: new Date(0)
   });
-  console.log('NODE_ENV:', process.env.NODE_ENV);
   return res.sendStatus(200);
 };
 
