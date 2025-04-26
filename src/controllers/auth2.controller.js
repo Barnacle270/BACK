@@ -4,6 +4,17 @@ import jwt from "jsonwebtoken";
 import { createAccessToken } from "../libs/jwt.js";
 import { TOKEN_SECRET } from "../config.js";
 
+// Helper para setear la cookie
+const setTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProduction, // Solo secure en producción
+    sameSite: isProduction ? 'None' : 'Lax', // None en prod, Lax en dev
+    maxAge: 24 * 60 * 60 * 1000, // 1 día
+  });
+};
+
 // REGISTRAR USUARIO
 export const register = async (req, res) => {
   const { dni, name, password, role } = req.body;
@@ -12,10 +23,8 @@ export const register = async (req, res) => {
     const userFound = await Employee.findOne({ dni });
     if (userFound) return res.status(400).json(["El DNI ya existe"]);
 
-    // Hashing the password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Creating the user
     const newEmployee = new Employee({
       dni,
       name,
@@ -23,21 +32,14 @@ export const register = async (req, res) => {
       role,
     });
 
-    // Saving the user in the database
     const userSaved = await newEmployee.save();
 
-    // Create access token
     const token = await createAccessToken({
       id: userSaved._id,
       dni: userSaved.dni,
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
-      sameSite: 'None', // Asegúrate de que esto esté configurado como 'None'
-      maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
-    });
+    setTokenCookie(res, token);
 
     res.json({
       id: userSaved._id,
@@ -73,12 +75,7 @@ export const login = async (req, res) => {
 
     console.log("NODE_ENV:", process.env.NODE_ENV);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Solo en producción con HTTPS
-      sameSite: "None", // Asegúrate de que esto esté configurado como 'None'
-      maxAge: 24 * 60 * 60 * 1000, // 1 día en milisegundos
-    });
+    setTokenCookie(res, token);
 
     res.json({
       id: userFound._id,
@@ -94,7 +91,7 @@ export const login = async (req, res) => {
 // VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
-  console.log("Verifying token:", token); // Log del token
+  console.log("Verifying token:", token);
 
   if (!token) {
     console.log("No token found");
@@ -124,12 +121,16 @@ export const verifyToken = async (req, res) => {
 
 // LOGOUT
 export const logout = (req, res) => {
+  // Para logout, reseteamos la cookie vacía
+  const isProduction = process.env.NODE_ENV === 'production';
+
   res.cookie("token", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // Solo en producción con HTTPS
-    sameSite: 'None', // Asegúrate de que esto esté configurado como 'None'
-    maxAge: 24 * 60 * 60 * 1000 // 1 día en milisegundos
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
+    maxAge: 0, // Eliminar la cookie
   });
+
   return res.sendStatus(200);
 };
 
