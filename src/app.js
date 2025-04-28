@@ -13,9 +13,11 @@ import conductorRoutes from './routes/conductor.routes.js';
 const app = express();
 
 // Configuración de CORS dinámica basada en entorno
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? ['https://administrativo.transportej.com']  // Tu dominio en producción
-  : ['http://localhost:5173'];                   // Local
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://administrativo.transportej.com',
+  'https://backendtjboletas.onrender.com'
+];
 
 app.use(cors({
   origin: allowedOrigins,
