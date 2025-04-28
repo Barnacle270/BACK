@@ -2,10 +2,15 @@ import mongoose from "mongoose";
 
 export const connectDB = async () => {
   try {
-    await mongoose.connect("mongodb+srv://Jhostym:22314121@clustertj.wr8smgz.mongodb.net/?retryWrites=true&w=majority&appName=ClusterTJ");  
-    
-    console.log("DB is connected");  
+    const mongoUri = process.env.MONGO_URI;
+    if (!mongoUri) {
+      throw new Error("No se encontró la URI de conexión a MongoDB (MONGO_URI) en las variables de entorno");
+    }
+
+    await mongoose.connect(mongoUri);
+    console.log("✅ Base de datos MongoDB conectada correctamente");
   } catch (error) {
-    console.log(error);
+    console.error("❌ Error conectando a la base de datos:", error.message);
+    process.exit(1); // Termina la app si no conecta
   }
 };
