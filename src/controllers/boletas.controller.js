@@ -5,14 +5,16 @@ import fs from "fs-extra";
 // Obtener boletas (ahora con paginación)
 export const getBoletas = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query; // Defaults: página 1, 10 boletas
+    const { page = 1, limit = 10, dni } = req.query;
 
-    const boletas = await Boleta.find()
-      .skip((page - 1) * limit) // Salta documentos anteriores
-      .limit(Number(limit)) // Limita documentos
-      .sort({ createdAt: -1 }); // Opcional: ordenar por creación (más nuevas primero)
-
-    const total = await Boleta.countDocuments(); // Total de boletas para frontend
+    const query = dni ? { dni: { $regex: dni, $options: 'i' } } : {};
+    
+    const boletas = await Boleta.find(query)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+    
+    const total = await Boleta.countDocuments(query);
 
     return res.json({
       total,
