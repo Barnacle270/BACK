@@ -5,10 +5,6 @@ import cors from 'cors';
 
 import auth2Routes from './routes/auth2.routes.js';
 import boletasRoutes from './routes/boletas.routes.js';
-import transporteRoutes from './routes/transporte.routes.js';
-import clienteRoutes from './routes/cliente.routes.js';
-import camionesRoutes from './routes/camiones.routes.js';
-import conductorRoutes from './routes/conductor.routes.js';
 
 const app = express();
 
@@ -32,10 +28,7 @@ app.use(cookieParser());
 // Rutas
 app.use('/api', auth2Routes);
 app.use('/api', boletasRoutes);
-app.use('/api', transporteRoutes);
-app.use('/api', clienteRoutes);
-app.use('/api', camionesRoutes);
-app.use('/api', conductorRoutes);
+
 
 // Ruta fallback para errores
 app.use((req, res) => {
