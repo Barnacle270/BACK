@@ -5,7 +5,7 @@ import cors from 'cors';
 
 import auth2Routes from './routes/auth2.routes.js';
 import boletasRoutes from './routes/boletas.routes.js';
-
+import cashRoutes from './routes/cash.routes.js';
 
 
 const app = express();
@@ -30,6 +30,8 @@ app.use(cookieParser());
 // Rutas
 app.use('/api', auth2Routes);
 app.use('/api', boletasRoutes);
+app.use('/api/caja', cashRoutes);
+app.use('/pdfs', express.static('src/pdfs')); // expone los PDF
 
 
 
