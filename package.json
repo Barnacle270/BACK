@@ -27,6 +27,8 @@
     "mongoose": "^8.1.1",
     "mongoose-paginate-v2": "^1.8.2",
     "morgan": "^1.10.0",
+    "pdfkit": "^0.17.1",
+    "uuid": "^11.1.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
