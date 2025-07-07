@@ -33,7 +33,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Rutas
-app.use('/api/auth', auth2Routes);
+app.use('/api', auth2Routes);
 app.use('/api', boletasRoutes);
 
 app.use('/api/servicios', servicioRoutes);
