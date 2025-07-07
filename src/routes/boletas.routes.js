@@ -1,20 +1,39 @@
 import { Router } from "express";
-import { getBoletas, createBoletas, getBoletasPorDni } from "../controllers/boletas.controller.js";
-import fileUpload from "express-fileupload";
-import { validatedni } from "../middlewares/validateDNI.js";
-import { createBoletasSchema } from "../schemas/boletas.schema.js";
-import { validateSchema } from '../middlewares/validator.middleware.js';
+import {
+  getBoletas,
+  getBoletasPorDni,
+  createBoletas,
+} from "../controllers/boletas.controller.js";
 
+import { authRequired } from "../middlewares/authRequired.js";
+import { requireRole } from "../middlewares/requireRole.js";
+import { validateSchema } from "../schemas/validateSchema.js";
+import { createBoletasSchema } from "../schemas/boleta.schema.js";
 
 const router = Router();
 
-router.get("/boletas", getBoletas);
+// 🧾 Obtener boletas del usuario autenticado (por su DNI)
+router.get(
+  "/boletas/mis-boletas",
+  authRequired,
+  getBoletasPorDni
+);
 
-router.post("/boletas", fileUpload({
-    useTempFiles: true,
-    tempFileDir: "./uploads",
-}), validateSchema(createBoletasSchema), createBoletas);
+// 📋 Obtener todas las boletas (solo para admin o superadmin)
+router.get(
+  "/boletas",
+  authRequired,
+  requireRole(["administrador", "superadministrador"]),
+  getBoletas
+);
 
-router.get("/boletasdni", validatedni, getBoletasPorDni)
+// ➕ Crear nueva boleta (solo admin o superadmin)
+router.post(
+  "/boletas",
+  authRequired,
+  requireRole(["administrador", "superadministrador"]),
+  validateSchema(createBoletasSchema),
+  createBoletas
+);
 
 export default router;

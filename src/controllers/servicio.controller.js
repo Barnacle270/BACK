@@ -188,25 +188,24 @@ export const marcarComoDevuelto = async (req, res) => {
 export const listarServiciosPorFecha = async (req, res) => {
   try {
     const { fecha } = req.query;
-
     if (!fecha) {
-      return res.status(400).json({ mensaje: 'Debe enviar una fecha en el formato YYYY-MM-DD' });
+      return res.status(400).json({ mensaje: 'Debe enviar una fecha en formato YYYY-MM-DD' });
     }
 
-    const desde = new Date(fecha);
-    const hasta = new Date(fecha);
-    hasta.setDate(hasta.getDate() + 1); // incluir hasta las 23:59:59
+    // Normalizar la fecha como inicio y fin del día en UTC
+    const desde = new Date(`${fecha}T00:00:00.000Z`);
+    const hasta = new Date(`${fecha}T23:59:59.999Z`);
 
     const servicios = await Servicio.find({
-      createdAt: {
+      fechaTraslado: {
         $gte: desde,
-        $lt: hasta
+        $lte: hasta
       }
     }).sort({ createdAt: -1 });
 
     res.status(200).json(servicios);
   } catch (error) {
-    console.error('Error al filtrar por fecha:', error);
+    console.error('Error al filtrar servicios:', error);
     res.status(500).json({ mensaje: 'Error al filtrar servicios', error: error.message });
   }
 };

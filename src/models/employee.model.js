@@ -18,9 +18,10 @@ const employeeSchema = new mongoose.Schema(
     },
     role: {
       type: String,
+      enum: ['usuario', 'administrador', 'superadministrador'],
       required: true,
-      default: "operador",
-    },
+      default: 'usuario',
+    }
   },
   {
     timestamps: true,

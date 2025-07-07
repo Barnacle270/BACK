@@ -44,6 +44,9 @@ const servicioSchema = new mongoose.Schema({
   numeroContenedor: {
     type: String
   },
+  observaciones: {
+    type: String
+  },
   terminalDevolucion: {
     type: String
   },

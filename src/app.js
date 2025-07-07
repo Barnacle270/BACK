@@ -7,6 +7,12 @@ import auth2Routes from './routes/auth2.routes.js';
 import boletasRoutes from './routes/boletas.routes.js';
 import servicioRoutes from './routes/servicio.routes.js';
 
+import reportesRoutes from './routes/reportes.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+
+
+
+
 const app = express();
 
 // Configuración de CORS dinámica basada en entorno
@@ -27,10 +33,13 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Rutas
-app.use('/api', auth2Routes);
+app.use('/api/auth', auth2Routes);
 app.use('/api', boletasRoutes);
 
 app.use('/api/servicios', servicioRoutes);
+
+app.use('/api/reportes', reportesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 
 

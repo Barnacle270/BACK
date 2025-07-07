@@ -4,13 +4,13 @@ import jwt from "jsonwebtoken";
 import { createAccessToken } from "../libs/jwt.js";
 import { TOKEN_SECRET } from "../config.js";
 
-// Helper para setear la cookie
+// Helper para setear la cookie del token
 const setTokenCookie = (res, token) => {
   const isProduction = process.env.NODE_ENV === 'production';
   res.cookie("token", token, {
     httpOnly: true,
-    secure: isProduction, // Solo secure en producción
-    sameSite: isProduction ? 'None' : 'Lax', // None en prod, Lax en dev
+    secure: isProduction,
+    sameSite: isProduction ? 'None' : 'Lax',
     maxAge: 24 * 60 * 60 * 1000, // 1 día
   });
 };
@@ -20,126 +20,156 @@ export const register = async (req, res) => {
   const { dni, name, password, role } = req.body;
 
   try {
-    const userFound = await Employee.findOne({ dni });
-    if (userFound) return res.status(400).json(["El DNI ya existe"]);
+    const existingUser = await Employee.findOne({ dni });
+    if (existingUser) return res.status(400).json(["El DNI ya está registrado"]);
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newEmployee = new Employee({
+    const newUser = new Employee({
       dni,
       name,
-      password: passwordHash,
+      password: hashedPassword,
       role,
     });
 
-    const userSaved = await newEmployee.save();
+    const savedUser = await newUser.save();
 
     const token = await createAccessToken({
-      id: userSaved._id,
-      dni: userSaved.dni,
+      id: savedUser._id,
+      dni: savedUser.dni,
     });
 
     setTokenCookie(res, token);
 
     res.json({
-      id: userSaved._id,
-      dni: userSaved.dni,
-      name: userSaved.name,
-      role: userSaved.role,
+      id: savedUser._id,
+      dni: savedUser.dni,
+      name: savedUser.name,
+      role: savedUser.role,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
-    console.log(error.message);
+    console.error("Error en register:", error.message);
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
 // LOGIN
+// LOGIN
 export const login = async (req, res) => {
   try {
     const { dni, password } = req.body;
-    const userFound = await Employee.findOne({ dni });
 
-    if (!userFound)
-      return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
+    const user = await Employee.findOne({ dni });
+    if (!user) return res.status(400).json(["DNI o contraseña incorrectos"]);
 
-    const isMatch = await bcrypt.compare(password, userFound.password);
-    if (!isMatch) {
-      return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json(["DNI o contraseña incorrectos"]);
     }
 
+    // Incluir role en el token
     const token = await createAccessToken({
-      id: userFound._id,
-      name: userFound.name,
-      dni: userFound.dni,
+      id: user._id,
+      name: user.name,
+      dni: user.dni,
+      role: user.role,  // Aquí se agrega el role
     });
-
-    console.log("NODE_ENV:", process.env.NODE_ENV);
 
     setTokenCookie(res, token);
 
     res.json({
-      id: userFound._id,
-      name: userFound.name,
-      dni: userFound.dni,
-      role: userFound.role,
+      id: user._id,
+      name: user.name,
+      dni: user.dni,
+      role: user.role,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("Error en login:", error.message);
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
-
 // VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
-  console.log("Verifying token:", token);
 
-  if (!token) {
-    console.log("No token found");
-    return res.sendStatus(401);
-  }
+  if (!token) return res.sendStatus(401);
 
-  jwt.verify(token, TOKEN_SECRET, async (error, user) => {
-    if (error) {
-      console.log("Token verification error:", error.message);
-      return res.sendStatus(401);
-    }
+  try {
+    const decoded = jwt.verify(token, TOKEN_SECRET);
+    const user = await Employee.findById(decoded.id);
+    if (!user) return res.sendStatus(401);
 
-    const userFound = await Employee.findById(user.id);
-    if (!userFound) {
-      console.log("User not found");
-      return res.sendStatus(401);
-    }
-
-    return res.json({
-      id: userFound._id,
-      name: userFound.name,
-      dni: userFound.dni,
-      role: userFound.role,
+    res.json({
+      id: user._id,
+      name: user.name,
+      dni: user.dni,
+      role: user.role,
     });
-  });
+  } catch (error) {
+    console.error("Token inválido:", error.message);
+    res.sendStatus(401);
+  }
 };
 
 // LOGOUT
 export const logout = (req, res) => {
-  // Para logout, reseteamos la cookie vacía
   const isProduction = process.env.NODE_ENV === 'production';
 
   res.cookie("token", "", {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'None' : 'Lax',
-    maxAge: 0, // Eliminar la cookie
+    maxAge: 0,
   });
 
-  return res.sendStatus(200);
+  res.sendStatus(200);
 };
 
-// PROFILE
+// PROFILE (requiere req.user de middleware)
 export const profile = async (req, res) => {
   try {
-    const user = await Employee.find();
-    return res.json(user);
+    const user = await Employee.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json({
+      id: user._id,
+      dni: user.dni,
+      name: user.name,
+      role: user.role,
+    });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("Error en profile:", error.message);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await Employee.find({}, "_id name dni role"); // solo datos necesarios
+    res.json(users);
+  } catch (error) {
+    // Ahora mostramos tanto el mensaje como el stack completo del error
+    console.error("Error al obtener usuarios:", error.message);
+    console.error(error.stack);  // Esto imprimirá el stack trace completo
+    res.status(500).json({ message: "Error al obtener usuarios", error: error.message });
+  }
+};
+
+export const updateUserRole = async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  try {
+    const user = await Employee.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json({ message: "Rol actualizado correctamente", user });
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar el rol" });
   }
 };
