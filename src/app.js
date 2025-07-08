@@ -10,6 +10,7 @@ import servicioRoutes from './routes/servicio.routes.js';
 import reportesRoutes from './routes/reportes.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 
+import clienteRoutes from './routes/cliente.routes.js'
 
 
 
@@ -40,6 +41,7 @@ app.use('/api/servicios', servicioRoutes);
 
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api', clienteRoutes);
 
 
 
