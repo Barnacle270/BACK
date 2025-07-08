@@ -2,6 +2,9 @@ import express from 'express';
 import multer from 'multer';
 import { actualizarCamposManuales, editarServicio, eliminarServicio, importarXML, listarServiciosPendientes, listarServiciosPorFecha, marcarComoDevuelto, obtenerServicioPorId } from '../controllers/servicio.controller.js';
 
+import { authRequired } from '../middlewares/validateToken.js'
+import { checkRole } from '../middlewares/checkRole.js';
+
 const router = express.Router();
 
 // Configuración de multer para subir XML
@@ -21,7 +24,7 @@ const upload = multer({ storage });
 router.post('/importar', upload.single('xml'), importarXML);
 router.put('/:id/manual', actualizarCamposManuales);
 
-router.get('/pendientes', listarServiciosPendientes);
+router.get('/pendientes', authRequired, listarServiciosPendientes);
 
 router.put('/:id/devolver', marcarComoDevuelto);
 router.get('/', listarServiciosPorFecha); // se combina con /api/servicios

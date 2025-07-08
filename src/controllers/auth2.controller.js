@@ -134,27 +134,4 @@ export const logout = (req, res) => {
   return res.sendStatus(200);
 };
 
-// PROFILE
-export const profile = async (req, res) => {
-  try {
-    const user = await Employee.find();
-    return res.json(user);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
 
-
-// Controlador para obtener todos los empleados
-export const getAllEmployees = async (req, res) => {
-  try {
-    // Obtener todos los empleados de la base de datos
-    const empleados = await Employee.find();
-
-    // Devolver los empleados en la respuesta
-    res.status(200).json(empleados);
-  } catch (error) {
-    // Si hay un error, devolver el error al cliente
-    res.status(500).json({ message: "Error al obtener los empleados", error });
-  }
-};
