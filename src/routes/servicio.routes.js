@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { actualizarCamposManuales, editarServicio, eliminarServicio, importarXML, listarServiciosPendientes, listarServiciosPorFecha, marcarComoDevuelto, obtenerServicioPorId } from '../controllers/servicio.controller.js';
+import { actualizarCamposManuales, editarServicio, eliminarServicio, importarXML, importarXMLMasivo, listarServiciosPendientes, listarServiciosPorFecha, marcarComoDevuelto, obtenerServicioPorId } from '../controllers/servicio.controller.js';
 
 import { authRequired } from '../middlewares/validateToken.js'
 import { checkRole } from '../middlewares/checkRole.js';
@@ -32,5 +32,8 @@ router.get('/', listarServiciosPorFecha); // se combina con /api/servicios
 router.get('/:id', obtenerServicioPorId);
 router.put('/:id/editar', editarServicio);
 router.delete('/:id', eliminarServicio);
+
+// routes/servicio.routes.js
+router.post('/importar-masivo', upload.array('xmls'), importarXMLMasivo);
 
 export default router;

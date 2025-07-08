@@ -258,3 +258,95 @@ export const eliminarServicio = async (req, res) => {
   }
 };
 
+export const importarXMLMasivo = async (req, res) => {
+  try {
+    const archivos = req.files;
+    const tipoCarga = 'CONTENEDOR'; // fijo
+    const clienteFinal = typeof req.body.cliente === 'string' ? req.body.cliente.trim() : '';
+
+    if (!archivos || archivos.length === 0) {
+      return res.status(400).json({ mensaje: 'No se subieron archivos XML' });
+    }
+
+    const parser = new XMLParser({ ignoreAttributes: false });
+    const serviciosCreados = [];
+    const errores = [];
+
+    for (const archivo of archivos) {
+      try {
+        const xml = fs.readFileSync(archivo.path, 'utf8');
+        const json = parser.parse(xml);
+        const data = json['DespatchAdvice'];
+
+        if (!data) throw new Error('Estructura XML no válida');
+
+        const shipment = data?.['cac:Shipment'];
+        const delivery = shipment?.['cac:Delivery'];
+        const despatch = delivery?.['cac:Despatch'];
+        const remitenteParty = despatch?.['cac:DespatchParty'];
+        const destinatarioParty = data?.['cac:DeliveryCustomerParty']?.['cac:Party'];
+
+        const numeroGuia = data['cbc:ID'];
+        const fechaTraslado = data['cbc:IssueDate'];
+        const documentoRelacionado = data['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
+
+        const remitente = {
+          ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
+          razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
+        };
+
+        const destinatario = {
+          ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
+          razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
+        };
+
+        const direccionPartida = despatch?.['cac:DespatchAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
+        const direccionLlegada = delivery?.['cac:DeliveryAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
+        const placaVehiculoPrincipal = shipment?.['cac:TransportHandlingUnit']?.['cac:TransportEquipment']?.['cbc:ID'] || '';
+        const nombreConductor = shipment?.['cac:ShipmentStage']?.['cac:DriverPerson']?.['cbc:FirstName'] || '';
+        const nota = data['cbc:Note'] || '';
+        const numeroContenedor = /^[A-Z]{4}\d{7}/.test(nota) ? nota.substring(0, 11) : 'carga suelta';
+
+        const estado = 'PENDIENTE'; // ya que tipoCarga siempre es CONTENEDOR
+
+        const existe = await Servicio.findOne({ numeroGuia });
+        if (existe) {
+          errores.push(`Ya existe un servicio con la guía ${numeroGuia}`);
+          continue;
+        }
+
+        const nuevoServicio = new Servicio({
+          numeroGuia,
+          fechaTraslado,
+          documentoRelacionado,
+          remitente,
+          destinatario,
+          direccionPartida,
+          direccionLlegada,
+          placaVehiculoPrincipal,
+          nombreConductor,
+          numeroContenedor,
+          tipoCarga,
+          cliente: clienteFinal,
+          estado
+        });
+
+        await nuevoServicio.save();
+        serviciosCreados.push(nuevoServicio);
+
+      } catch (err) {
+        errores.push(`Error en archivo ${archivo.originalname}: ${err.message}`);
+      }
+    }
+
+    return res.status(201).json({
+      mensaje: `${serviciosCreados.length} servicios creados exitosamente`,
+      creados: serviciosCreados.length,
+      errores
+    });
+
+  } catch (error) {
+    console.error('Error al importar masivamente:', error);
+    return res.status(500).json({ mensaje: 'Error en la importación masiva', error: error.message });
+  }
+};
