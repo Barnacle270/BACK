@@ -66,7 +66,27 @@ const servicioSchema = new mongoose.Schema({
     type: String,
     enum: ['PENDIENTE', 'CONCLUIDO'],
     required: true
+  },
+
+  // NUEVOS CAMPOS PARA FACTURACIÓN
+  estadoFacturacion: {
+    type: String,
+    enum: ['RECEPCIONADO', 'FACTURADO'],
+    default: null
+  },
+  fechaRecepcion: {
+    type: Date,
+    default: null
+  },
+  fechaFacturacion: {
+    type: Date,
+    default: null
+  },
+  numeroFactura: {
+    type: String,
+    default: null
   }
+
 }, {
   timestamps: true
 });

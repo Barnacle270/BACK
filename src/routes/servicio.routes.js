@@ -1,8 +1,21 @@
 import express from 'express';
 import multer from 'multer';
-import { actualizarCamposManuales, editarServicio, eliminarServicio, importarXML, importarXMLMasivo, listarServiciosPendientes, listarServiciosPorFecha, marcarComoDevuelto, obtenerServicioPorId } from '../controllers/servicio.controller.js';
+import {
+  actualizarCamposManuales,
+  actualizarEstadoFacturacion,
+  editarServicio,
+  eliminarServicio,
+  importarXML,
+  importarXMLMasivo,
+  listarServiciosPendientes,
+  listarServiciosPorFecha,
+  marcarComoDevuelto,
+  obtenerServicioPorId,
+  obtenerServiciosSinFacturar,
+  recepcionarLoteServicios
+} from '../controllers/servicio.controller.js';
 
-import { authRequired } from '../middlewares/validateToken.js'
+import { authRequired } from '../middlewares/validateToken.js';
 import { checkRole } from '../middlewares/checkRole.js';
 
 const router = express.Router();
@@ -20,20 +33,23 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Ruta para importar servicio desde XML
+// RUTAS ESPECÍFICAS ANTES
 router.post('/importar', upload.single('xml'), importarXML);
+router.post('/importar-masivo', upload.array('xmls'), importarXMLMasivo);
+
 router.put('/:id/manual', actualizarCamposManuales);
+router.put('/:id/devolver', marcarComoDevuelto);
+router.put('/:id/editar', editarServicio);
+router.put('/:id/facturacion', actualizarEstadoFacturacion);
+router.put('/facturacion/lote', recepcionarLoteServicios);
 
 router.get('/pendientes', authRequired, listarServiciosPendientes);
+router.get('/sin-factura', obtenerServiciosSinFacturar); // DEBE IR ANTES DE /:id
 
-router.put('/:id/devolver', marcarComoDevuelto);
-router.get('/', listarServiciosPorFecha); // se combina con /api/servicios
+router.get('/', listarServiciosPorFecha);
 
+// RUTA CON PARÁMETRO AL FINAL
 router.get('/:id', obtenerServicioPorId);
-router.put('/:id/editar', editarServicio);
 router.delete('/:id', eliminarServicio);
-
-// routes/servicio.routes.js
-router.post('/importar-masivo', upload.array('xmls'), importarXMLMasivo);
 
 export default router;

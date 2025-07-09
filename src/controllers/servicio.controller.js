@@ -350,3 +350,89 @@ export const importarXMLMasivo = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error en la importación masiva', error: error.message });
   }
 };
+
+// Obtener todos los servicios cuyo estadoFacturacion está vacío (null o no definido)
+export const obtenerServiciosSinFacturar = async (req, res) => {
+  try {
+    const servicios = await Servicio.find({
+      $or: [
+        { estadoFacturacion: { $exists: false } },
+        { estadoFacturacion: null },
+        { estadoFacturacion: '' }
+      ]
+    }).sort({ createdAt: -1 });
+
+    res.json(servicios);
+  } catch (error) {
+    console.error('Error al obtener servicios sin facturar:', error);
+    res.status(500).json({ message: 'Error al obtener servicios sin facturar' });
+  }
+};
+// Actualizar estado de facturación (puede ser a RECEPCIONADO o FACTURADO)
+export const actualizarEstadoFacturacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      estadoFacturacion,
+      fechaRecepcion,
+      fechaFacturacion,
+      numeroFactura
+    } = req.body;
+
+    const servicio = await Servicio.findById(id);
+    if (!servicio) {
+      return res.status(404).json({ mensaje: 'Servicio no encontrado' });
+    }
+
+    if (estadoFacturacion === 'RECEPCIONADO') {
+      servicio.estadoFacturacion = 'RECEPCIONADO';
+      servicio.fechaRecepcion = fechaRecepcion;
+      servicio.fechaFacturacion = null;
+      servicio.numeroFactura = null;
+    } else if (estadoFacturacion === 'FACTURADO') {
+      servicio.estadoFacturacion = 'FACTURADO';
+      servicio.fechaFacturacion = fechaFacturacion;
+      servicio.numeroFactura = numeroFactura;
+    } else {
+      return res.status(400).json({ mensaje: 'Estado de facturación inválido' });
+    }
+
+    await servicio.save();
+    res.json({ mensaje: 'Estado de facturación actualizado correctamente', servicio });
+
+  } catch (error) {
+    console.error('Error al actualizar estado de facturación:', error);
+    res.status(500).json({ mensaje: 'Error al actualizar estado de facturación' });
+  }
+};
+
+// Actualizar múltiples servicios a RECEPCIONADO con la misma fecha
+export const recepcionarLoteServicios = async (req, res) => {
+  try {
+    const { ids, fechaRecepcion } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ mensaje: 'Lista de IDs inválida' });
+    }
+
+    const result = await Servicio.updateMany(
+      { _id: { $in: ids } },
+      {
+        $set: {
+          estadoFacturacion: 'RECEPCIONADO',
+          fechaRecepcion,
+          fechaFacturacion: null,
+          numeroFactura: null
+        }
+      }
+    );
+
+    res.json({
+      mensaje: 'Servicios recepcionados correctamente',
+      modificados: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error al recepcionar lote:', error);
+    res.status(500).json({ mensaje: 'Error al recepcionar lote' });
+  }
+};
