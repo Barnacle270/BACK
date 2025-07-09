@@ -104,6 +104,7 @@ export const actualizarCamposManuales = async (req, res) => {
       vencimientoMemo,
       placaDevolucion,
       conductorDevolucion,
+      horaCita,
       fechaDevolucion
     } = req.body;
 
@@ -120,6 +121,7 @@ export const actualizarCamposManuales = async (req, res) => {
     // Actualizar campos manuales
     servicio.terminalDevolucion = terminalDevolucion;
     servicio.vencimientoMemo = vencimientoMemo;
+    servicio.horaCita = horaCita;
     servicio.placaDevolucion = placaDevolucion || '';
     servicio.fechaDevolucion = fechaDevolucion || null;
     servicio.conductorDevolucion = conductorDevolucion || '';
@@ -146,7 +148,8 @@ export const listarServiciosPendientes = async (req, res) => {
       'placaDevolucion',
       'conductorDevolucion',
       'vencimientoMemo',
-      'fechaDevolucion'
+      'fechaDevolucion',
+      'horaCita'
     ]);
 
     res.status(200).json(serviciosPendientes);

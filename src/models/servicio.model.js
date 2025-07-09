@@ -56,6 +56,9 @@ const servicioSchema = new mongoose.Schema({
   fechaDevolucion: {
     type: Date
   },
+  horaCita: {
+    type: String
+  },
   placaDevolucion: {
     type: String
   },
