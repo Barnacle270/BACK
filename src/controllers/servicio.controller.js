@@ -2,6 +2,7 @@ import fs from 'fs';
 import { XMLParser } from 'fast-xml-parser';
 import Servicio from '../models/servicio.model.js';
 
+
 export const importarXML = async (req, res) => {
   try {
     if (!req.file) {
@@ -11,49 +12,32 @@ export const importarXML = async (req, res) => {
     const xml = fs.readFileSync(req.file.path, 'utf8');
     const parser = new XMLParser({ ignoreAttributes: false });
     const json = parser.parse(xml);
-
     const data = json['DespatchAdvice'];
     if (!data) return res.status(400).json({ mensaje: 'Estructura XML no válida' });
 
-    // Extraer ramas de datos anidados
-    const shipment = data?.['cac:Shipment'];
-    const delivery = shipment?.['cac:Delivery'];
-    const despatch = delivery?.['cac:Despatch'];
-    const remitenteParty = despatch?.['cac:DespatchParty'];
-    const destinatarioParty = data?.['cac:DeliveryCustomerParty']?.['cac:Party'];
+    const rawTipoGuia = data['cbc:DespatchAdviceTypeCode'];
+    const tipoGuia = typeof rawTipoGuia === 'object' && rawTipoGuia['#text']
+      ? String(rawTipoGuia['#text']).trim()
+      : String(rawTipoGuia).trim(); if (!['31', '62'].includes(tipoGuia)) {
+        return res.status(400).json({ mensaje: 'Tipo de guía no soportado (solo 31 o 62)' });
+      }
 
-    // Datos automáticos del XML
     const numeroGuia = data['cbc:ID'];
-    const fechaTraslado = data['cbc:IssueDate'];
-    const documentoRelacionado = data['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
-
-    const remitente = {
-      ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
-      razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
-    };
-
-    const destinatario = {
-      ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
-      razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
-    };
-
-    const direccionPartida = despatch?.['cac:DespatchAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
-    const direccionLlegada = delivery?.['cac:DeliveryAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
-    const placaVehiculoPrincipal = shipment?.['cac:TransportHandlingUnit']?.['cac:TransportEquipment']?.['cbc:ID'] || '';
-    const nombreConductor = shipment?.['cac:ShipmentStage']?.['cac:DriverPerson']?.['cbc:FirstName'] || '';
-
-    // Número de contenedor desde <cbc:Note>
+    const fechaTraslado =
+      tipoGuia === '62'
+        ? data['cbc:DespatchDate'] || data['cbc:IssueDate']
+        : data['cbc:IssueDate'];
     const nota = data['cbc:Note'] || '';
     const numeroContenedor = /^[A-Z]{4}\d{7}/.test(nota) ? nota.substring(0, 11) : 'carga suelta';
+    const documentoRelacionado = data?.['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
 
-    // 🧾 Campos manuales desde frontend
+    // 🧾 Campos manuales obligatorios
     const tipoCarga = req.body.tipoCarga?.toUpperCase();
     const cliente = req.body.cliente;
 
     if (!tipoCarga || !['CONTENEDOR', 'CARGA SUELTA', 'TOLVA', 'OTROS'].includes(tipoCarga)) {
       return res.status(400).json({ mensaje: 'Tipo de carga inválido o faltante' });
     }
-
     if (!cliente || typeof cliente !== 'string' || cliente.trim() === '') {
       return res.status(400).json({ mensaje: 'El nombre del cliente es obligatorio' });
     }
@@ -66,8 +50,54 @@ export const importarXML = async (req, res) => {
       return res.status(409).json({ mensaje: `Ya existe un servicio con la guía ${numeroGuia}` });
     }
 
-    // Crear nuevo documento
+    // Extraer datos comunes
+    let remitente = { ruc: '', razonSocial: '' };
+    let destinatario = { ruc: '', razonSocial: '' };
+    let direccionPartida = '';
+    let direccionLlegada = '';
+    let placaVehiculoPrincipal = '';
+    let nombreConductor = '';
+
+    if (tipoGuia === '31') {
+      // Guía NORMAL (Remitente)
+      const shipment = data?.['cac:Shipment'];
+      const delivery = shipment?.['cac:Delivery'];
+      const despatch = delivery?.['cac:Despatch'];
+      const remitenteParty = despatch?.['cac:DespatchParty'];
+      const destinatarioParty = data?.['cac:DeliveryCustomerParty']?.['cac:Party'];
+
+      remitente = {
+        ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
+        razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
+      };
+      destinatario = {
+        ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
+        razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
+      };
+
+      direccionPartida = despatch?.['cac:DespatchAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
+      direccionLlegada = delivery?.['cac:DeliveryAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
+      placaVehiculoPrincipal = shipment?.['cac:TransportHandlingUnit']?.['cac:TransportEquipment']?.['cbc:ID'] || '';
+      nombreConductor = shipment?.['cac:ShipmentStage']?.['cac:DriverPerson']?.['cbc:FirstName'] || '';
+    }
+
+    if (tipoGuia === '62') {
+      // Guía ESPECIAL (Transportista)
+      direccionPartida = data?.['sac:SUNATShipment']?.['cac:OriginAddress']?.['cbc:StreetName'] || '';
+      direccionLlegada = data?.['sac:SUNATShipment']?.['cac:DeliveryAddress']?.['cbc:StreetName'] || '';
+
+      const roadTransport = data?.['sac:SUNATShipment']?.['sac:SUNATShipmentStage']?.['sac:SUNATTransportMeans']?.['sac:SUNATRoadTransport'];
+      const placas = Array.isArray(roadTransport)
+        ? roadTransport.map(p => p['cbc:LicensePlateID']).filter(Boolean)
+        : [roadTransport?.['cbc:LicensePlateID']];
+
+      placaVehiculoPrincipal = placas[0] || '';
+      nombreConductor =
+        data?.['sac:SUNATShipment']?.['sac:SUNATShipmentStage']?.['sac:SUNATTransportMeans']?.['sac:DriverParty']?.['cac:Party']?.['cac:PartyName']?.['cbc:Name'] || '';
+    }
+
     const nuevoServicio = new Servicio({
+      tipoGuia: tipoGuia === '31' ? 'NORMAL' : 'ESPECIAL',
       numeroGuia,
       fechaTraslado,
       documentoRelacionado,
@@ -95,7 +125,6 @@ export const importarXML = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error procesando el XML', error: error.message });
   }
 };
-
 export const actualizarCamposManuales = async (req, res) => {
   try {
     const { id } = req.params;
@@ -264,11 +293,15 @@ export const eliminarServicio = async (req, res) => {
 export const importarXMLMasivo = async (req, res) => {
   try {
     const archivos = req.files;
-    const tipoCarga = 'CONTENEDOR'; // fijo
+    const tipoCarga = 'CONTENEDOR'; // Fijo en importación masiva
     const clienteFinal = typeof req.body.cliente === 'string' ? req.body.cliente.trim() : '';
 
     if (!archivos || archivos.length === 0) {
       return res.status(400).json({ mensaje: 'No se subieron archivos XML' });
+    }
+
+    if (!clienteFinal) {
+      return res.status(400).json({ mensaje: 'El nombre del cliente es obligatorio' });
     }
 
     const parser = new XMLParser({ ignoreAttributes: false });
@@ -283,42 +316,65 @@ export const importarXMLMasivo = async (req, res) => {
 
         if (!data) throw new Error('Estructura XML no válida');
 
-        const shipment = data?.['cac:Shipment'];
-        const delivery = shipment?.['cac:Delivery'];
-        const despatch = delivery?.['cac:Despatch'];
-        const remitenteParty = despatch?.['cac:DespatchParty'];
-        const destinatarioParty = data?.['cac:DeliveryCustomerParty']?.['cac:Party'];
+        const tipoGuia = data['cbc:DespatchAdviceTypeCode'];
+        if (!['31', '62'].includes(tipoGuia)) {
+          throw new Error(`Tipo de guía no soportado (${tipoGuia})`);
+        }
 
         const numeroGuia = data['cbc:ID'];
         const fechaTraslado = data['cbc:IssueDate'];
-        const documentoRelacionado = data['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
-
-        const remitente = {
-          ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
-          razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
-        };
-
-        const destinatario = {
-          ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
-          razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
-        };
-
-        const direccionPartida = despatch?.['cac:DespatchAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
-        const direccionLlegada = delivery?.['cac:DeliveryAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
-        const placaVehiculoPrincipal = shipment?.['cac:TransportHandlingUnit']?.['cac:TransportEquipment']?.['cbc:ID'] || '';
-        const nombreConductor = shipment?.['cac:ShipmentStage']?.['cac:DriverPerson']?.['cbc:FirstName'] || '';
+        const documentoRelacionado = data?.['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
         const nota = data['cbc:Note'] || '';
         const numeroContenedor = /^[A-Z]{4}\d{7}/.test(nota) ? nota.substring(0, 11) : 'carga suelta';
 
-        const estado = 'PENDIENTE'; // ya que tipoCarga siempre es CONTENEDOR
+        let remitente = { ruc: '', razonSocial: '' };
+        let destinatario = { ruc: '', razonSocial: '' };
+        let direccionPartida = '';
+        let direccionLlegada = '';
+        let placaVehiculoPrincipal = '';
+        let nombreConductor = '';
 
-        const existe = await Servicio.findOne({ numeroGuia });
-        if (existe) {
-          errores.push(`Ya existe un servicio con la guía ${numeroGuia}`);
+        if (tipoGuia === '31') {
+          const shipment = data?.['cac:Shipment'];
+          const delivery = shipment?.['cac:Delivery'];
+          const despatch = delivery?.['cac:Despatch'];
+          const remitenteParty = despatch?.['cac:DespatchParty'];
+          const destinatarioParty = data?.['cac:DeliveryCustomerParty']?.['cac:Party'];
+
+          remitente = {
+            ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
+            razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
+          };
+          destinatario = {
+            ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
+            razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
+          };
+
+          direccionPartida = despatch?.['cac:DespatchAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
+          direccionLlegada = delivery?.['cac:DeliveryAddress']?.['cac:AddressLine']?.['cbc:Line'] || '';
+          placaVehiculoPrincipal = shipment?.['cac:TransportHandlingUnit']?.['cac:TransportEquipment']?.['cbc:ID'] || '';
+          nombreConductor = shipment?.['cac:ShipmentStage']?.['cac:DriverPerson']?.['cbc:FirstName'] || '';
+        }
+
+        if (tipoGuia === '62') {
+          direccionPartida = data?.['sac:SUNATShipment']?.['cac:OriginAddress']?.['cbc:StreetName'] || '';
+          direccionLlegada = data?.['sac:SUNATShipment']?.['cac:DeliveryAddress']?.['cbc:StreetName'] || '';
+          placaVehiculoPrincipal =
+            data?.['sac:SUNATShipment']?.['sac:SUNATShipmentStage']?.['sac:SUNATTransportMeans']?.['sac:SUNATRoadTransport']?.['cbc:LicensePlateID'] || '';
+          nombreConductor =
+            data?.['sac:SUNATShipment']?.['sac:SUNATShipmentStage']?.['sac:SUNATTransportMeans']?.['sac:DriverParty']?.['cac:Party']?.['cac:PartyName']?.['cbc:Name'] || '';
+        }
+
+        const estado = tipoCarga === 'CONTENEDOR' ? 'PENDIENTE' : 'CONCLUIDO';
+
+        const yaExiste = await Servicio.findOne({ numeroGuia });
+        if (yaExiste) {
+          errores.push(`Ya existe el servicio con la guía ${numeroGuia}`);
           continue;
         }
 
         const nuevoServicio = new Servicio({
+          tipoGuia: tipoGuia === '31' ? 'NORMAL' : 'ESPECIAL',
           numeroGuia,
           fechaTraslado,
           documentoRelacionado,
@@ -342,8 +398,8 @@ export const importarXMLMasivo = async (req, res) => {
       }
     }
 
-    return res.status(201).json({
-      mensaje: `${serviciosCreados.length} servicios creados exitosamente`,
+    res.status(201).json({
+      mensaje: `${serviciosCreados.length} servicios creados`,
       creados: serviciosCreados.length,
       errores
     });
@@ -353,16 +409,13 @@ export const importarXMLMasivo = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error en la importación masiva', error: error.message });
   }
 };
-
 // Obtener todos los servicios cuyo estadoFacturacion está vacío (null o no definido)
+
 export const obtenerServiciosSinFacturar = async (req, res) => {
   try {
     const servicios = await Servicio.find({
-      $or: [
-        { estadoFacturacion: { $exists: false } },
-        { estadoFacturacion: null },
-        { estadoFacturacion: '' }
-      ]
+      estadoFacturacion: { $ne: 'FACTURADO' },
+      estado: { $ne: 'ANULADA' }
     }).sort({ createdAt: -1 });
 
     res.json(servicios);
@@ -371,6 +424,8 @@ export const obtenerServiciosSinFacturar = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener servicios sin facturar' });
   }
 };
+
+
 // Actualizar estado de facturación (puede ser a RECEPCIONADO o FACTURADO)
 export const actualizarEstadoFacturacion = async (req, res) => {
   try {

@@ -1,14 +1,18 @@
 import mongoose from 'mongoose';
 
 const servicioSchema = new mongoose.Schema({
+  tipoGuia: {
+    type: String,
+    enum: ['NORMAL', 'ESPECIAL'],
+    required: true
+  },
   numeroGuia: {
     type: String,
     required: true,
-    unique: true // Este campo será la clave única
+    unique: true
   },
   fechaTraslado: {
-    type: Date,
-    required: true
+    type: Date // Ya no es "required", para aceptar guías tipo 62
   },
   documentoRelacionado: {
     type: String
@@ -71,7 +75,7 @@ const servicioSchema = new mongoose.Schema({
     required: true
   },
 
-  // NUEVOS CAMPOS PARA FACTURACIÓN
+  // FACTURACIÓN
   estadoFacturacion: {
     type: String,
     enum: ['RECEPCIONADO', 'FACTURADO'],

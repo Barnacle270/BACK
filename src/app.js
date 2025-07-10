@@ -14,7 +14,6 @@ import clienteRoutes from './routes/cliente.routes.js';
 import  conductorRoutes from './routes/conductor.routes.js'
 
 
-
 const app = express();
 
 // Configuración de CORS dinámica basada en entorno
@@ -45,7 +44,6 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', clienteRoutes);
 
 app.use('/api', conductorRoutes);
-
 
 
 

@@ -17,8 +17,9 @@ export const generarReporteServicios = async (req, res) => {
     const servicios = await Servicio.find(filtro).lean();
 
     const data = servicios.map(s => ({
-      "Guía": s.numeroGuia,
-      "Fecha de Traslado": s.fechaTraslado?.toISOString().slice(0, 10),
+      "Tipo de Guía": s.tipoGuia || '',
+      "Guía": s.numeroGuia || '',
+      "Fecha de Traslado": s.fechaTraslado?.toISOString().slice(0, 10) || '',
       "Documento Relacionado": s.documentoRelacionado || '',
       "Cliente": s.cliente || '',
       "RUC Remitente": s.remitente?.ruc || '',
@@ -35,9 +36,14 @@ export const generarReporteServicios = async (req, res) => {
       "Terminal de Devolución": s.terminalDevolucion || '',
       "Placa Devolución": s.placaDevolucion || '',
       "Conductor Devolución": s.conductorDevolucion || '',
+      "Hora de Cita": s.horaCita || '',
       "Vencimiento Memo": s.vencimientoMemo?.toISOString().slice(0, 10) || '',
       "Fecha Devolución": s.fechaDevolucion?.toISOString().slice(0, 10) || '',
       "Estado": s.estado || '',
+      "Estado de Facturación": s.estadoFacturacion || '',
+      "Fecha de Recepción": s.fechaRecepcion?.toISOString().slice(0, 10) || '',
+      "Fecha de Facturación": s.fechaFacturacion?.toISOString().slice(0, 10) || '',
+      "Número de Factura": s.numeroFactura || '',
       "Creado el": s.createdAt?.toISOString().slice(0, 10) || '',
       "Actualizado el": s.updatedAt?.toISOString().slice(0, 10) || ''
     }));
