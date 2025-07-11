@@ -9,7 +9,9 @@ export const importarXML = async (req, res) => {
       return res.status(400).json({ mensaje: 'No se subió ningún archivo XML' });
     }
 
-    const xml = fs.readFileSync(req.file.path, 'utf8');
+    const filePath = req.file.path;
+    const xml = await fs.readFile(filePath, 'utf8');
+
     const parser = new XMLParser({ ignoreAttributes: false });
     const json = parser.parse(xml);
     const data = json['DespatchAdvice'];
@@ -18,39 +20,43 @@ export const importarXML = async (req, res) => {
     const rawTipoGuia = data['cbc:DespatchAdviceTypeCode'];
     const tipoGuia = typeof rawTipoGuia === 'object' && rawTipoGuia['#text']
       ? String(rawTipoGuia['#text']).trim()
-      : String(rawTipoGuia).trim(); if (!['31', '62'].includes(tipoGuia)) {
-        return res.status(400).json({ mensaje: 'Tipo de guía no soportado (solo 31 o 62)' });
-      }
+      : String(rawTipoGuia).trim();
+
+    if (!['31', '62'].includes(tipoGuia)) {
+      return res.status(400).json({ mensaje: 'Tipo de guía no soportado (solo 31 o 62)' });
+    }
 
     const numeroGuia = data['cbc:ID'];
     const fechaTraslado =
       tipoGuia === '62'
         ? data['cbc:DespatchDate'] || data['cbc:IssueDate']
         : data['cbc:IssueDate'];
+
     const nota = data['cbc:Note'] || '';
     const numeroContenedor = /^[A-Z]{4}\d{7}/.test(nota) ? nota.substring(0, 11) : 'carga suelta';
     const documentoRelacionado = data?.['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
 
-    // 🧾 Campos manuales obligatorios
+    // Datos manuales requeridos desde el frontend
     const tipoCarga = req.body.tipoCarga?.toUpperCase();
     const cliente = req.body.cliente;
+    const horaCita = req.body.horaCita || null; // opcional
 
     if (!tipoCarga || !['CONTENEDOR', 'CARGA SUELTA', 'TOLVA', 'OTROS'].includes(tipoCarga)) {
       return res.status(400).json({ mensaje: 'Tipo de carga inválido o faltante' });
     }
+
     if (!cliente || typeof cliente !== 'string' || cliente.trim() === '') {
       return res.status(400).json({ mensaje: 'El nombre del cliente es obligatorio' });
     }
 
     const estado = tipoCarga === 'CONTENEDOR' ? 'PENDIENTE' : 'CONCLUIDO';
 
-    // Validar duplicado
     const existe = await Servicio.findOne({ numeroGuia });
     if (existe) {
       return res.status(409).json({ mensaje: `Ya existe un servicio con la guía ${numeroGuia}` });
     }
 
-    // Extraer datos comunes
+    // Extraer datos generales
     let remitente = { ruc: '', razonSocial: '' };
     let destinatario = { ruc: '', razonSocial: '' };
     let direccionPartida = '';
@@ -59,7 +65,6 @@ export const importarXML = async (req, res) => {
     let nombreConductor = '';
 
     if (tipoGuia === '31') {
-      // Guía NORMAL (Remitente)
       const shipment = data?.['cac:Shipment'];
       const delivery = shipment?.['cac:Delivery'];
       const despatch = delivery?.['cac:Despatch'];
@@ -70,6 +75,7 @@ export const importarXML = async (req, res) => {
         ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
         razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
       };
+
       destinatario = {
         ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
         razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
@@ -82,7 +88,6 @@ export const importarXML = async (req, res) => {
     }
 
     if (tipoGuia === '62') {
-      // Guía ESPECIAL (Transportista)
       direccionPartida = data?.['sac:SUNATShipment']?.['cac:OriginAddress']?.['cbc:StreetName'] || '';
       direccionLlegada = data?.['sac:SUNATShipment']?.['cac:DeliveryAddress']?.['cbc:StreetName'] || '';
 
@@ -110,7 +115,8 @@ export const importarXML = async (req, res) => {
       numeroContenedor,
       tipoCarga,
       cliente,
-      estado
+      estado,
+      horaCita: horaCita || null
     });
 
     await nuevoServicio.save();
@@ -125,6 +131,10 @@ export const importarXML = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error procesando el XML', error: error.message });
   }
 };
+
+
+
+
 export const actualizarCamposManuales = async (req, res) => {
   try {
     const { id } = req.params;

@@ -20,10 +20,10 @@ import { checkRole } from '../middlewares/checkRole.js';
 
 const router = express.Router();
 
-// Configuración de multer para subir XML
+// ✅ Configuración de multer para compatibilidad con Render
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Asegúrate de que esta carpeta exista
+    cb(null, process.env.NODE_ENV === 'production' ? '/tmp' : 'uploads/');
   },
   filename: function (req, file, cb) {
     const uniqueName = `${Date.now()}-${file.originalname}`;
