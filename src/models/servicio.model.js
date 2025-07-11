@@ -12,7 +12,7 @@ const servicioSchema = new mongoose.Schema({
     unique: true
   },
   fechaTraslado: {
-    type: Date // Ya no es "required", para aceptar guías tipo 62
+    type: Date
   },
   documentoRelacionado: {
     type: String
@@ -61,7 +61,8 @@ const servicioSchema = new mongoose.Schema({
     type: Date
   },
   horaCita: {
-    type: String
+    type: String,
+    default: ''
   },
   placaDevolucion: {
     type: String
@@ -71,7 +72,7 @@ const servicioSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['PENDIENTE', 'CONCLUIDO','ANULADA'],
+    enum: ['PENDIENTE', 'CONCLUIDO', 'ANULADA'],
     required: true
   },
 
