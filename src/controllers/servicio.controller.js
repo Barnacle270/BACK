@@ -427,7 +427,7 @@ export const importarXMLMasivo = async (req, res) => {
 export const obtenerServiciosSinFacturar = async (req, res) => {
   try {
     const servicios = await Servicio.find({
-      estadoFacturacion: { $ne: 'FACTURADO' },
+      estadoFacturacion: { $nin: ['FACTURADO', 'RECEPCIONADO'] },
       estado: { $ne: 'ANULADA' }
     }).sort({ createdAt: -1 });
 
@@ -437,7 +437,6 @@ export const obtenerServiciosSinFacturar = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener servicios sin facturar' });
   }
 };
-
 
 // Actualizar estado de facturación (puede ser a RECEPCIONADO o FACTURADO)
 export const actualizarEstadoFacturacion = async (req, res) => {
