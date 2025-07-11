@@ -71,7 +71,7 @@ const servicioSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['PENDIENTE', 'CONCLUIDO'],
+    enum: ['PENDIENTE', 'CONCLUIDO','ANULADA'],
     required: true
   },
 

@@ -13,14 +13,20 @@ const servicioSchema = new mongoose.Schema({
 const Servicio = mongoose.model('Servicio', servicioSchema);
 
 const guiasAAnular = [
+  //"EG03-4879",
+  //"EG03-4903",
+  //"EG03-4902",
+  //"EG03-4839",
+  //"EG03-4834",
+  //"EG03-4829",
+  //"EG03-4811",
+  //"EG03-4806",
   "EG03-4879",
-  "EG03-4903",
-  "EG03-4902",
-  "EG03-4839",
-  "EG03-4834",
-  "EG03-4829",
-  "EG03-4811",
-  "EG03-4806"
+  "EG03-4823",
+  "EG03-4920",
+  "G010-1411",
+  "G010-1402",
+  "G010-1401",
 ];
 
 async function anularGuias() {
