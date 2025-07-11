@@ -9,9 +9,7 @@ export const importarXML = async (req, res) => {
       return res.status(400).json({ mensaje: 'No se subió ningún archivo XML' });
     }
 
-    const filePath = req.file.path;
-    const xml = await fs.readFile(filePath, 'utf8');
-
+    const xml = fs.readFileSync(req.file.path, 'utf8');
     const parser = new XMLParser({ ignoreAttributes: false });
     const json = parser.parse(xml);
     const data = json['DespatchAdvice'];
@@ -36,27 +34,27 @@ export const importarXML = async (req, res) => {
     const numeroContenedor = /^[A-Z]{4}\d{7}/.test(nota) ? nota.substring(0, 11) : 'carga suelta';
     const documentoRelacionado = data?.['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
 
-    // Datos manuales requeridos desde el frontend
+    // 🧾 Datos manuales desde frontend
     const tipoCarga = req.body.tipoCarga?.toUpperCase();
     const cliente = req.body.cliente;
-    const horaCita = req.body.horaCita || null; // opcional
+    const horaCita = req.body.horaCita || null;
 
     if (!tipoCarga || !['CONTENEDOR', 'CARGA SUELTA', 'TOLVA', 'OTROS'].includes(tipoCarga)) {
       return res.status(400).json({ mensaje: 'Tipo de carga inválido o faltante' });
     }
-
     if (!cliente || typeof cliente !== 'string' || cliente.trim() === '') {
       return res.status(400).json({ mensaje: 'El nombre del cliente es obligatorio' });
     }
 
     const estado = tipoCarga === 'CONTENEDOR' ? 'PENDIENTE' : 'CONCLUIDO';
 
+    // Validar duplicado
     const existe = await Servicio.findOne({ numeroGuia });
     if (existe) {
       return res.status(409).json({ mensaje: `Ya existe un servicio con la guía ${numeroGuia}` });
     }
 
-    // Extraer datos generales
+    // Extraer datos comunes
     let remitente = { ruc: '', razonSocial: '' };
     let destinatario = { ruc: '', razonSocial: '' };
     let direccionPartida = '';
@@ -65,6 +63,7 @@ export const importarXML = async (req, res) => {
     let nombreConductor = '';
 
     if (tipoGuia === '31') {
+      // Guía NORMAL
       const shipment = data?.['cac:Shipment'];
       const delivery = shipment?.['cac:Delivery'];
       const despatch = delivery?.['cac:Despatch'];
@@ -75,7 +74,6 @@ export const importarXML = async (req, res) => {
         ruc: remitenteParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
         razonSocial: remitenteParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
       };
-
       destinatario = {
         ruc: destinatarioParty?.['cac:PartyIdentification']?.['cbc:ID']?.['#text'] || '',
         razonSocial: destinatarioParty?.['cac:PartyLegalEntity']?.['cbc:RegistrationName'] || ''
@@ -88,6 +86,7 @@ export const importarXML = async (req, res) => {
     }
 
     if (tipoGuia === '62') {
+      // Guía ESPECIAL
       direccionPartida = data?.['sac:SUNATShipment']?.['cac:OriginAddress']?.['cbc:StreetName'] || '';
       direccionLlegada = data?.['sac:SUNATShipment']?.['cac:DeliveryAddress']?.['cbc:StreetName'] || '';
 
@@ -115,11 +114,16 @@ export const importarXML = async (req, res) => {
       numeroContenedor,
       tipoCarga,
       cliente,
-      estado,
-      horaCita: horaCita || null
+      horaCita,
+      estado
     });
 
     await nuevoServicio.save();
+
+    // ✅ Eliminar archivo una vez procesado
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.warn('No se pudo eliminar el archivo temporal:', err);
+    });
 
     return res.status(201).json({
       mensaje: 'Servicio creado exitosamente',
@@ -131,7 +135,6 @@ export const importarXML = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error procesando el XML', error: error.message });
   }
 };
-
 
 
 
