@@ -506,3 +506,25 @@ export const recepcionarLoteServicios = async (req, res) => {
     res.status(500).json({ mensaje: 'Error al recepcionar lote' });
   }
 };
+
+export const anularServicio = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const servicio = await Servicio.findById(id);
+    if (!servicio) {
+      return res.status(404).json({ mensaje: 'Servicio no encontrado' });
+    }
+
+    servicio.estado = 'ANULADA';
+    await servicio.save();
+
+    res.status(200).json({
+      mensaje: 'Servicio anulado correctamente',
+      servicio
+    });
+  } catch (error) {
+    console.error('Error al anular servicio:', error);
+    res.status(500).json({ mensaje: 'Error al anular servicio', error: error.message });
+  }
+};

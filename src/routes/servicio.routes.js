@@ -3,6 +3,7 @@ import multer from 'multer';
 import {
   actualizarCamposManuales,
   actualizarEstadoFacturacion,
+  anularServicio,
   editarServicio,
   eliminarServicio,
   importarXML,
@@ -49,7 +50,10 @@ router.get('/sin-factura', obtenerServiciosSinFacturar); // DEBE IR ANTES DE /:i
 router.get('/', listarServiciosPorFecha);
 
 // RUTA CON PARÁMETRO AL FINAL
+router.put('/:id/anular', anularServicio);
 router.get('/:id', obtenerServicioPorId);
 router.delete('/:id', eliminarServicio);
+
+
 
 export default router;

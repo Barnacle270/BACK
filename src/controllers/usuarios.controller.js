@@ -34,14 +34,22 @@ export const listarUsuarios = async (req, res) => {
   }
 };
 
-// Editar datos generales del usuario (nombre, correo, rol, etc.)
 export const actualizarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const actualizaciones = req.body;
+    const actualizaciones = { ...req.body };
+
+    // Si se envía contraseña y no está vacía, la hasheamos
+    if (actualizaciones.password && actualizaciones.password.trim() !== "") {
+      const hashedPassword = await bcrypt.hash(actualizaciones.password, 10);
+      actualizaciones.password = hashedPassword;
+    } else {
+      // Si no se envió o está vacía, eliminamos el campo para no sobreescribir
+      delete actualizaciones.password;
+    }
 
     await Employee.findByIdAndUpdate(id, actualizaciones, { new: true });
-    res.json({ message: 'Usuario actualizado correctamente' });
+    res.json({ message: "Usuario actualizado correctamente" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
