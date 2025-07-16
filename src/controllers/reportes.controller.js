@@ -62,3 +62,27 @@ export const generarReporteServicios = async (req, res) => {
     res.status(500).json({ message: 'Error al generar el reporte' });
   }
 };
+
+export const listarPendientesFacturacion = async (req, res) => {
+  try {
+    const pendientes = await Servicio.find({
+      $and: [
+        { estado: { $ne: 'ANULADA' } },
+        {
+          $or: [
+            { estadoFacturacion: { $exists: false } },
+            { estadoFacturacion: { $eq: null } },
+            { estadoFacturacion: { $ne: 'FACTURADO' } },
+          ]
+        }
+      ]
+    }).sort({ fechaTraslado: -1 });
+
+    res.json(pendientes);
+  } catch (error) {
+    console.error('Error al obtener servicios pendientes de facturar:', error);
+    res.status(500).json({ mensaje: 'Error al obtener pendientes de facturar' });
+  }
+};
+
+
