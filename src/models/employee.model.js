@@ -3,38 +3,32 @@ import mongoose from "mongoose";
 // Definición del esquema del modelo de Empleado
 const employeeSchema = new mongoose.Schema(
   {
-    dni: {
-      type: String,
-      required: true,
-      unique: true, // Asegura que no haya dos empleados con el mismo DNI
-    },
-    name: {
-      type: String,
-      required: true,
-      trim: true, // Elimina espacios en blanco al principio y al final
-    },
+    dni: { type: String, required: true, unique: true },
+    name: { type: String, required: true, trim: true },
     email: {
       type: String,
       required: true,
-      unique: true, // Asegura que el correo sea único
-      lowercase: true, // Convierte todos los correos a minúsculas
-      match: [/\S+@\S+\.\S+/, 'Please use a valid email address'], // Validación básica de formato de correo
+      unique: true,
+      lowercase: true,
+      match: [/\S+@\S+\.\S+/, 'Please use a valid email address'],
     },
     password: {
       type: String,
       required: true,
-      minlength: [6, 'Password must be at least 6 characters'], // Validación de longitud mínima
+      minlength: [6, 'Password must be at least 6 characters'],
     },
     role: {
       type: String,
-      enum: ['usuario', 'administrador', 'superadministrador'], // Roles permitidos
-      default: 'usuario', // Valor por defecto si no se especifica
+      enum: ['usuario', 'administrador', 'superadministrador'],
+      default: 'usuario',
       required: true,
     },
+    activo: {
+      type: Boolean,
+      default: true,
+    },
   },
-  {
-    timestamps: true, // Crea automáticamente los campos 'createdAt' y 'updatedAt'
-  }
+  { timestamps: true }
 );
 
 export default mongoose.model("Employee", employeeSchema);

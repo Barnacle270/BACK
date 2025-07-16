@@ -12,6 +12,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 
 import clienteRoutes from './routes/cliente.routes.js';
 import  conductorRoutes from './routes/conductor.routes.js'
+import usuariosRoutes from './routes/usuarios.routes.js'
 
 
 const app = express();
@@ -34,18 +35,14 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Rutas
+app.use('/api/usuarios', usuariosRoutes);
 app.use('/api', auth2Routes);
 app.use('/api', boletasRoutes);
-
 app.use('/api/servicios', servicioRoutes);
-
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', clienteRoutes);
-
 app.use('/api', conductorRoutes);
-
-
 
 // Ruta fallback para errores
 app.use((req, res) => {

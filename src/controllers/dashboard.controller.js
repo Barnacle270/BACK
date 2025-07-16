@@ -23,11 +23,19 @@ export const obtenerEstadisticasDashboard = async (req, res) => {
       ],
     });
 
-    // Servicios en los últimos 7 días (excluyendo anulados)
-    const ultimos7Dias = await Servicio.countDocuments({
-      estado: { $ne: 'ANULADA' },
+    // Guías ANULADAS dentro del mes actual
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
+
+    const finMes = new Date(inicioMes);
+    finMes.setMonth(finMes.getMonth() + 1);
+
+    const anuladasMesActual = await Servicio.countDocuments({
+      estado: 'ANULADA',
       fechaTraslado: {
-        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        $gte: inicioMes,
+        $lt: finMes,
       },
     });
 
@@ -37,7 +45,7 @@ export const obtenerEstadisticasDashboard = async (req, res) => {
       concluidos,
       facturados,
       pendientesFacturar,
-      ultimos7Dias,
+      anuladasMesActual, // reemplaza a ultimos7Dias
     });
   } catch (err) {
     console.error('Error al obtener estadísticas del dashboard:', err);
