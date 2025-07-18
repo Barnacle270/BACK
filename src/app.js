@@ -15,6 +15,11 @@ import  conductorRoutes from './routes/conductor.routes.js'
 import usuariosRoutes from './routes/usuarios.routes.js'
 
 
+import maquinariaRoutes from './routes/maquinaria.routes.js';
+import lecturaRoutes from './routes/lectura.routes.js';
+import mantenimientoRoutes from './routes/mantenimiento.routes.js';
+
+
 const app = express();
 
 // Configuración de CORS dinámica basada en entorno
@@ -43,6 +48,10 @@ app.use('/api/reportes', reportesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', clienteRoutes);
 app.use('/api', conductorRoutes);
+
+app.use('/api/maquinarias', maquinariaRoutes);
+app.use('/api/lecturas', lecturaRoutes);
+app.use('/api/mantenimientos', mantenimientoRoutes);
 
 // Ruta fallback para errores
 app.use((req, res) => {
