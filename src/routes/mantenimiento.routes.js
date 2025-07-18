@@ -1,21 +1,31 @@
 import express from 'express';
 import {
   crearMantenimiento,
-  obtenerMantenimientos,
-  obtenerMantenimientoPorId,
-  actualizarMantenimiento,
-  eliminarMantenimiento,
-  obtenerMantenimientosPorMaquinaria
+  obtenerMantenimientosPorMaquinaria,
+  obtenerMantenimientosProximos
 } from '../controllers/mantenimiento.controller.js';
+
+import MantenimientoRealizado from '../models/mantenimientoRealizado.model.js';
 
 const router = express.Router();
 
-// Ruta base: /api/mantenimientos
+// ✅ Obtener todos los mantenimientos realizados
+router.get('/', async (req, res) => {
+  try {
+    const mantenimientos = await MantenimientoRealizado.find().populate('maquinaria');
+    res.json(mantenimientos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener mantenimientos', detalle: error.message });
+  }
+});
+
+// ✅ RUTA ESPECÍFICA primero
+router.get('/proximos-mantenimientos', obtenerMantenimientosProximos);
+
+// 🛠 Crear nuevo mantenimiento
 router.post('/', crearMantenimiento);
-router.get('/', obtenerMantenimientos);
-router.get('/:id', obtenerMantenimientoPorId);
-router.get('/maquinaria/:id', obtenerMantenimientosPorMaquinaria);
-router.put('/:id', actualizarMantenimiento);
-router.delete('/:id', eliminarMantenimiento);
+
+// 🧾 Obtener mantenimientos por maquinaria (dinámico, va al final)
+router.get('/:maquinariaId', obtenerMantenimientosPorMaquinaria);
 
 export default router;

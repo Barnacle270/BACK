@@ -1,12 +1,16 @@
 import mongoose from 'mongoose';
 
-const lecturaSchema = new mongoose.Schema({
+const mantenimientoRealizadoSchema = new mongoose.Schema({
   maquinaria: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Maquinaria',
     required: true
   },
-  valor: {
+  tipoMantenimiento: {
+    type: String,
+    required: true
+  },
+  lectura: {
     type: Number,
     required: true
   },
@@ -21,9 +25,12 @@ const lecturaSchema = new mongoose.Schema({
   },
   observaciones: {
     type: String
+  },
+  realizadoPor: {
+    type: String
   }
 }, {
   timestamps: true
 });
 
-export default mongoose.model('Lectura', lecturaSchema);
+export default mongoose.model('MantenimientoRealizado', mantenimientoRealizadoSchema);
