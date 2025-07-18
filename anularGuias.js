@@ -29,15 +29,12 @@ const Servicio = mongoose.model('Servicio', servicioSchema);
 //"EG03-4853",
 //"EG03-4941",
 //"EG03-4940",
-
-
 //"G010-1411",
 //"G010-1402",
 //"G010-1401",
 
 
 const guiasAAnular = [
-
 
 
 ];

@@ -1,115 +1,114 @@
 import Mantenimiento from '../models/mantenimiento.model.js';
 import Maquinaria from '../models/maquinaria.model.js';
 
-// Crear mantenimiento con código automático
-
+// Crear mantenimiento
 export const crearMantenimiento = async (req, res) => {
   try {
-    const { maquinaria, lectura, fecha } = req.body;
+    const {
+      maquinaria,
+      tipo,
+      fecha,
+      lectura,
+      repuestos = [],
+      responsable,
+      observaciones
+    } = req.body;
 
-    // Validar formato de fecha
+    // Validación básica
+    if (!maquinaria || !tipo || !fecha || typeof lectura !== 'number') {
+      return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
+    }
+
+    if (!['PREVENTIVO', 'CORRECTIVO'].includes(tipo)) {
+      return res.status(400).json({ mensaje: 'Tipo de mantenimiento inválido' });
+    }
+
     const fechaMantenimiento = new Date(fecha);
-    if (isNaN(fechaMantenimiento)) {
-      return res.status(400).json({
-        mensaje: 'Fecha inválida',
-        detalle: 'El formato de la fecha no es válido.'
-      });
-    }
-
-    // Validar que no sea futura
     const hoy = new Date();
-    if (fechaMantenimiento > hoy) {
-      return res.status(400).json({
-        mensaje: 'Fecha inválida',
-        detalle: 'No puedes registrar un mantenimiento en una fecha futura.'
-      });
+    if (isNaN(fechaMantenimiento) || fechaMantenimiento > hoy) {
+      return res.status(400).json({ mensaje: 'Fecha inválida' });
     }
 
-    // Buscar la maquinaria
     const maquinariaActual = await Maquinaria.findById(maquinaria);
     if (!maquinariaActual) {
-      return res.status(404).json({
-        mensaje: 'Maquinaria no encontrada'
-      });
+      return res.status(404).json({ mensaje: 'Maquinaria no encontrada' });
     }
 
-    // Validar que la lectura sea un número positivo
-    if (typeof lectura !== 'number' || lectura <= 0) {
+    const ultimaLectura = typeof maquinariaActual.ultimaLecturaMantenimiento === 'number'
+      ? maquinariaActual.ultimaLecturaMantenimiento
+      : 0;
+
+    const lecturaActual = typeof maquinariaActual.lecturaActual === 'number'
+      ? maquinariaActual.lecturaActual
+      : 0;
+
+    if (lectura <= 0) {
+      return res.status(400).json({ mensaje: 'La lectura debe ser mayor a cero.' });
+    }
+
+    if (lectura <= ultimaLectura) {
       return res.status(400).json({
-        mensaje: 'Lectura inválida',
-        detalle: 'La lectura debe ser un número mayor a cero.'
+        mensaje: `La lectura debe ser mayor a la última registrada (${ultimaLectura}).`
       });
     }
 
-    // Validar que la lectura no sea menor a la última registrada
-    if (lectura < maquinariaActual.ultimaLecturaMantenimiento) {
+    if (lectura <= lecturaActual) {
       return res.status(400).json({
-        mensaje: 'Lectura inválida',
-        detalle: `La lectura ingresada (${lectura}) no puede ser menor a la última lectura de mantenimiento (${maquinariaActual.ultimaLecturaMantenimiento}).`
+        mensaje: `La lectura del mantenimiento debe ser mayor a la lectura actual de la máquina (${lecturaActual}).`
       });
     }
 
-    // Validar que la lectura no supere la lectura actual
-    if (lectura > maquinariaActual.lecturaActual) {
+    const yaExiste = await Mantenimiento.findOne({ maquinaria, fecha: fechaMantenimiento });
+    if (yaExiste) {
       return res.status(400).json({
-        mensaje: 'Lectura inválida',
-        detalle: `La lectura ingresada (${lectura}) no puede ser mayor que la lectura actual (${maquinariaActual.lecturaActual}) de la maquinaria.`
+        mensaje: 'Ya existe un mantenimiento registrado en esa fecha.'
       });
     }
 
-    // Validar si ya hay un mantenimiento en la misma fecha para la misma maquinaria
-    const yaRegistrado = await Mantenimiento.findOne({ maquinaria, fecha });
-    if (yaRegistrado) {
-      return res.status(400).json({
-        mensaje: 'Mantenimiento duplicado',
-        detalle: 'Ya existe un mantenimiento registrado para esta maquinaria en esa fecha.'
-      });
-    }
-
-    // Validar que la nueva fecha no sea anterior al último mantenimiento registrado
     const ultimo = await Mantenimiento.findOne({ maquinaria }).sort({ fecha: -1 });
     if (ultimo && fechaMantenimiento < new Date(ultimo.fecha)) {
       return res.status(400).json({
-        mensaje: 'Fecha inválida',
-        detalle: `La fecha del mantenimiento (${fecha}) no puede ser anterior al último mantenimiento registrado (${ultimo.fecha}).`
+        mensaje: 'La fecha no puede ser anterior al último mantenimiento registrado.'
       });
     }
 
-    // === Generar código ===
+    // Generar código correlativo
     const año = fechaMantenimiento.getFullYear();
     const cantidad = await Mantenimiento.countDocuments({
       fecha: {
-        $gte: new Date(`${año}-01-01T00:00:00.000Z`),
-        $lte: new Date(`${año}-12-31T23:59:59.999Z`)
+        $gte: new Date(`${año}-01-01`),
+        $lte: new Date(`${año}-12-31`)
       }
     });
     const codigo = `MANT-${String(cantidad + 1).padStart(4, '0')}-${año}`;
 
-    // Crear el nuevo mantenimiento
-    const nuevoMantenimiento = new Mantenimiento({
-      ...req.body,
+    // Crear mantenimiento
+    const nuevo = await Mantenimiento.create({
+      maquinaria,
+      tipo,
+      fecha: fechaMantenimiento,
+      lectura,
+      repuestos,
+      responsable,
+      observaciones,
       codigo
     });
-    await nuevoMantenimiento.save();
 
-    // Actualizar los campos en la maquinaria
+    // Actualizar maquinaria
     await Maquinaria.findByIdAndUpdate(maquinaria, {
       ultimaLecturaMantenimiento: lectura,
-      ultimaFechaMantenimiento: fecha
+      ultimaFechaMantenimiento: fechaMantenimiento
     });
 
-    res.status(201).json(nuevoMantenimiento);
+    res.status(201).json(nuevo);
 
   } catch (error) {
     res.status(500).json({
       mensaje: 'Error al registrar mantenimiento',
-      detalle: error.message || error
+      detalle: error.message
     });
   }
-};
-
-
-// Obtener todos los mantenimientos
+};// Obtener todos los mantenimientos
 export const obtenerMantenimientos = async (req, res) => {
   try {
     const mantenimientos = await Mantenimiento.find()
@@ -117,7 +116,7 @@ export const obtenerMantenimientos = async (req, res) => {
       .sort({ fecha: -1 });
     res.json(mantenimientos);
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al obtener mantenimientos', error });
+    res.status(500).json({ mensaje: 'Error al obtener mantenimientos', detalle: error.message });
   }
 };
 
@@ -131,44 +130,47 @@ export const obtenerMantenimientoPorId = async (req, res) => {
     }
     res.json(mantenimiento);
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al obtener mantenimiento', error });
+    res.status(500).json({ mensaje: 'Error al obtener mantenimiento', detalle: error.message });
   }
 };
 
-// Obtener mantenimientos por maquinaria
+// Obtener por maquinaria
 export const obtenerMantenimientosPorMaquinaria = async (req, res) => {
   try {
-    const mantenimientos = await Mantenimiento.find({ maquinaria: req.params.id })
+    const { id } = req.params;
+    const mantenimientos = await Mantenimiento.find({ maquinaria: id })
       .sort({ fecha: -1 });
     res.json(mantenimientos);
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al obtener mantenimientos', error });
+    res.status(500).json({ mensaje: 'Error al obtener mantenimientos', detalle: error.message });
   }
 };
 
 // Actualizar mantenimiento
 export const actualizarMantenimiento = async (req, res) => {
   try {
-    const mantenimientoActualizado = await Mantenimiento.findByIdAndUpdate(
+    const actualizado = await Mantenimiento.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
-    res.json(mantenimientoActualizado);
+    res.json(actualizado);
   } catch (error) {
-    res.status(400).json({ mensaje: 'Error al actualizar mantenimiento', error });
+    res.status(400).json({ mensaje: 'Error al actualizar mantenimiento', detalle: error.message });
   }
 };
 
 // Eliminar mantenimiento
 export const eliminarMantenimiento = async (req, res) => {
   try {
-    const mantenimientoEliminado = await Mantenimiento.findByIdAndDelete(req.params.id);
-    if (!mantenimientoEliminado) {
+    const eliminado = await Mantenimiento.findByIdAndDelete(req.params.id);
+    if (!eliminado) {
       return res.status(404).json({ mensaje: 'Mantenimiento no encontrado' });
     }
     res.json({ mensaje: 'Mantenimiento eliminado correctamente' });
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al eliminar mantenimiento', error });
+    res.status(500).json({ mensaje: 'Error al eliminar mantenimiento', detalle: error.message });
   }
 };
+
+

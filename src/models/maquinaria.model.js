@@ -8,7 +8,7 @@ const maquinariaSchema = new mongoose.Schema({
   },
   marca: { type: String },
   modelo: { type: String },
-  numeroSerie: { type: String, unique: true, sparse: true },
+  numeroSerie: { type: String, sparse: true },
   placa: { type: String, unique: true, sparse: true },
   anio: { type: Number },
   ubicacion: { type: String },
