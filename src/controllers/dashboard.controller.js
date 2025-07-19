@@ -11,8 +11,11 @@ export const obtenerEstadisticasDashboard = async (req, res) => {
     // Concluidos
     const concluidos = await Servicio.countDocuments({ estado: 'CONCLUIDO' });
 
-    // Facturados
-    const facturados = await Servicio.countDocuments({ estadoFacturacion: 'FACTURADO' });
+    // Facturados (excluyendo los ANULADOS)
+    const facturados = await Servicio.countDocuments({
+      estado: { $ne: 'ANULADA' },
+      estadoFacturacion: 'FACTURADO',
+    });
 
     // Pendientes de facturar (no anulados y no facturados)
     const pendientesFacturar = await Servicio.countDocuments({
