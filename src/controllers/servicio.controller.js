@@ -9,7 +9,21 @@ export const importarXML = async (req, res) => {
       return res.status(400).json({ mensaje: 'No se subió ningún archivo XML' });
     }
 
-    const xml = fs.readFileSync(req.file.path, 'utf8');
+    // Verifica si el archivo existe antes de leer
+    if (!fs.existsSync(req.file.path)) {
+      return res.status(500).json({
+        mensaje: 'Archivo no encontrado en el servidor',
+        path: req.file.path
+      });
+    }
+
+    let xml = '';
+    try {
+      xml = fs.readFileSync(req.file.path, 'utf8');
+    } catch (err) {
+      return res.status(500).json({ mensaje: 'No se pudo leer el archivo XML', error: err.message });
+    }
+
     const parser = new XMLParser({ ignoreAttributes: false });
     const json = parser.parse(xml);
     const data = json['DespatchAdvice'];
@@ -25,16 +39,21 @@ export const importarXML = async (req, res) => {
     }
 
     const numeroGuia = data['cbc:ID'];
-    const fechaTraslado =
-      tipoGuia === '62'
-        ? data['cbc:DespatchDate'] || data['cbc:IssueDate']
-        : data['cbc:IssueDate'];
+
+    // ✅ CORREGIDO: extraer la fecha real de traslado
+    let fechaTraslado = null;
+    if (tipoGuia === '62') {
+      fechaTraslado = data['cbc:DespatchDate'] || data['cbc:IssueDate'];
+    } else if (tipoGuia === '31') {
+      fechaTraslado =
+        data?.['cac:Shipment']?.['cac:ShipmentStage']?.['cac:TransitPeriod']?.['cbc:StartDate'] ||
+        data['cbc:IssueDate'];
+    }
 
     const nota = data['cbc:Note'] || '';
     const numeroContenedor = /^[A-Z]{4}\d{7}/.test(nota) ? nota.substring(0, 11) : 'carga suelta';
     const documentoRelacionado = data?.['cac:AdditionalDocumentReference']?.['cbc:ID'] || null;
 
-    // 🧾 Datos manuales desde frontend
     const tipoCarga = req.body.tipoCarga?.toUpperCase();
     const cliente = req.body.cliente;
     const horaCita = req.body.horaCita || null;
@@ -54,7 +73,7 @@ export const importarXML = async (req, res) => {
       return res.status(409).json({ mensaje: `Ya existe un servicio con la guía ${numeroGuia}` });
     }
 
-    // Extraer datos comunes
+    // Extraer datos
     let remitente = { ruc: '', razonSocial: '' };
     let destinatario = { ruc: '', razonSocial: '' };
     let direccionPartida = '';
@@ -63,7 +82,6 @@ export const importarXML = async (req, res) => {
     let nombreConductor = '';
 
     if (tipoGuia === '31') {
-      // Guía NORMAL
       const shipment = data?.['cac:Shipment'];
       const delivery = shipment?.['cac:Delivery'];
       const despatch = delivery?.['cac:Despatch'];
@@ -86,7 +104,6 @@ export const importarXML = async (req, res) => {
     }
 
     if (tipoGuia === '62') {
-      // Guía ESPECIAL
       direccionPartida = data?.['sac:SUNATShipment']?.['cac:OriginAddress']?.['cbc:StreetName'] || '';
       direccionLlegada = data?.['sac:SUNATShipment']?.['cac:DeliveryAddress']?.['cbc:StreetName'] || '';
 
@@ -103,7 +120,7 @@ export const importarXML = async (req, res) => {
     const nuevoServicio = new Servicio({
       tipoGuia: tipoGuia === '31' ? 'NORMAL' : 'ESPECIAL',
       numeroGuia,
-      fechaTraslado,
+      fechaTraslado: new Date(fechaTraslado), // ✅ convierte a objeto fecha
       documentoRelacionado,
       remitente,
       destinatario,
@@ -135,7 +152,6 @@ export const importarXML = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error procesando el XML', error: error.message });
   }
 };
-
 
 
 export const actualizarCamposManuales = async (req, res) => {
