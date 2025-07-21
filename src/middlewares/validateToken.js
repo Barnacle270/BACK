@@ -13,7 +13,6 @@ export const authRequired = (req, res, next) => {
   try {
     // Verifica el token
     const decoded = jwt.verify(token, TOKEN_SECRET);
-    console.log("Token verificado:", decoded); // Verifica que el token esté siendo decodificado correctamente
 
     req.user = decoded; // Almacena los datos decodificados en la solicitud
     next(); // Continúa con la siguiente lógica

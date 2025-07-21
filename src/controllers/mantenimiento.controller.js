@@ -1,6 +1,9 @@
 import MantenimientoRealizado from '../models/mantenimientoRealizado.model.js';
 import Maquinaria from '../models/maquinaria.model.js';
 
+import AlertaEnviada from '../models/AlertaEnviada.js';
+import { enviarAlertaCorreo } from '../utils/mailer.js';
+
 // Crear mantenimiento realizado
 export const crearMantenimiento = async (req, res) => {
   try {
@@ -77,24 +80,27 @@ export const obtenerMantenimientosPorMaquinaria = async (req, res) => {
   }
 };
 
-// controllers/mantenimiento.controller.js (agrega esta función)
-
 export const obtenerMantenimientosProximos = async (req, res) => {
   try {
     const maquinarias = await Maquinaria.find();
-
     const mantenimientosProximos = [];
 
-    maquinarias.forEach(maquina => {
+    const destinatarios = process.env.ALERTA_CORREOS?.split(',') || [];
+
+    if (destinatarios.length === 0) {
+      console.warn('⚠️ No hay destinatarios configurados en ALERTA_CORREOS');
+    }
+
+    for (const maquina of maquinarias) {
       const { lecturaActual, mantenimientos } = maquina;
 
-      if (!mantenimientos || !Array.isArray(mantenimientos)) return;
+      if (!Array.isArray(mantenimientos)) continue;
 
-      mantenimientos.forEach(m => {
+      for (const m of mantenimientos) {
         const ultima = m.ultimaLectura || 0;
         const frecuencia = m.frecuencia;
 
-        if (!frecuencia || frecuencia === 0) return;
+        if (!frecuencia || frecuencia === 0) continue;
 
         const diferencia = lecturaActual - ultima;
         const porcentaje = (diferencia / frecuencia) * 100;
@@ -118,12 +124,54 @@ export const obtenerMantenimientosProximos = async (req, res) => {
             }
           });
         }
-      });
-    });
+
+        // 🔔 Si vencido y aún no se alertó para esta lectura
+        if (porcentaje >= 100 && destinatarios.length > 0) {
+          const yaAlertado = await AlertaEnviada.exists({
+            maquinariaId: maquina._id,
+            mantenimientoNombre: m.nombre,
+            lecturaEnAlerta: lecturaActual
+          });
+
+          if (!yaAlertado) {
+            const mensaje = `
+⚠️ MANTENIMIENTO VENCIDO
+
+Maquinaria: ${maquina.tipo} - ${maquina.placa}
+Mantenimiento: ${m.nombre}
+Lectura actual: ${lecturaActual} (${Math.round(porcentaje)}%)
+
+Por favor, realizar el mantenimiento cuanto antes.
+`;
+
+            await enviarAlertaCorreo(destinatarios, '🚨 Mantenimiento Vencido', mensaje);
+
+            try {
+              await AlertaEnviada.create({
+                maquinariaId: maquina._id,
+                mantenimientoNombre: m.nombre,
+                lecturaEnAlerta: lecturaActual,
+                fecha: new Date(),
+                estado: 'enviado'
+              });
+            } catch (error) {
+              if (error.code === 11000) {
+                console.warn(`⛔ Duplicado evitado: ${maquina._id} - ${m.nombre} - ${lecturaActual}`);
+              } else {
+                throw error;
+              }
+            }
+          }
+        }
+      }
+    }
 
     res.json(mantenimientosProximos);
   } catch (error) {
-    console.error('Error en obtenerMantenimientosProximos:', error);
-    res.status(500).json({ error: 'Error al calcular mantenimientos próximos', detalle: error.message });
+    console.error('❌ Error en obtenerMantenimientosProximos:', error);
+    res.status(500).json({
+      error: 'Error al calcular mantenimientos próximos',
+      detalle: error.message
+    });
   }
 };
