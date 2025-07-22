@@ -4,12 +4,9 @@ import { TOKEN_SECRET } from "../config.js";
 export const authRequired = (req, res, next) => {
   const { token } = req.cookies;  // O desde los encabezados si es necesario
 
-  console.log("Token recibido:", token); // Verifica si el token se está recibiendo correctamente
-
   if (!token) {
     return res.status(401).json({ message: "No token, authorization denied" });
   }
-
   try {
     // Verifica el token
     const decoded = jwt.verify(token, TOKEN_SECRET);

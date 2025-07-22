@@ -49,7 +49,6 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
-    console.log(error.message);
   }
 };
 
@@ -73,8 +72,6 @@ export const login = async (req, res) => {
       dni: userFound.dni,
     });
 
-    console.log("NODE_ENV:", process.env.NODE_ENV);
-
     setTokenCookie(res, token);
 
     res.json({
@@ -91,22 +88,17 @@ export const login = async (req, res) => {
 // VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
-  console.log("Verifying token:", token);
-
   if (!token) {
-    console.log("No token found");
     return res.sendStatus(401);
   }
 
   jwt.verify(token, TOKEN_SECRET, async (error, user) => {
     if (error) {
-      console.log("Token verification error:", error.message);
       return res.sendStatus(401);
     }
 
     const userFound = await Employee.findById(user.id);
     if (!userFound) {
-      console.log("User not found");
       return res.sendStatus(401);
     }
 
