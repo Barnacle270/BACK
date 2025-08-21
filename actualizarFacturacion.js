@@ -7,18 +7,16 @@ await mongoose.connect('mongodb+srv://Jhostym:22314121@clustertj.wr8smgz.mongodb
 // 2. Lista de guías con datos de facturación
 const facturas = [
 
+  {"numeroGuia": "EG03-5200","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5245","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5239","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5243","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5262","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5306","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5295","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5312","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
+  {"numeroGuia": "EG03-5323","numeroFactura": "F001-00000000","fechaFacturacion": "2025-08-19" },
 
-
-{ numeroGuia: 'EG03-4980', numeroFactura: 'F001-00004025', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-4979', numeroFactura: 'F001-00004025', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-4987', numeroFactura: 'F001-00004025', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-4985', numeroFactura: 'F001-00004025', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-4986', numeroFactura: 'F001-00004025', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-4984', numeroFactura: 'F001-00004025', fechaFacturacion: '2025-07-19' },
-
-{ numeroGuia: 'EG03-5015', numeroFactura: 'F001-00004026', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-5021', numeroFactura: 'F001-00004027', fechaFacturacion: '2025-07-19' },
-{ numeroGuia: 'EG03-5012', numeroFactura: 'F001-00004028', fechaFacturacion: '2025-07-19' },
 
 
 ];

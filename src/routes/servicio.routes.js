@@ -44,7 +44,7 @@ router.put('/:id/editar', editarServicio);
 router.put('/:id/facturacion', actualizarEstadoFacturacion);
 router.put('/facturacion/lote', recepcionarLoteServicios);
 
-router.get('/pendientes', authRequired, listarServiciosPendientes);
+router.get('/pendientes', listarServiciosPendientes);
 router.get('/sin-factura', obtenerServiciosSinFacturar); // DEBE IR ANTES DE /:id
 
 router.get('/', listarServiciosPorFecha);
