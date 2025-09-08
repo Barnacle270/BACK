@@ -3,6 +3,36 @@ import { XMLParser } from 'fast-xml-parser';
 import Servicio from '../models/servicio.model.js';
 
 
+import mongoose from "mongoose";   // 👈 Importar mongoose
+
+export const debugServicios = async (req, res) => {
+  try {
+    // 🔹 Ver base de datos actual
+    console.log("📂 Base de datos:", mongoose.connection.name);
+    console.log("📦 Colección de Servicio:", Servicio.collection.name);
+
+    // 🔹 Contar documentos
+    const total = await Servicio.countDocuments();
+    console.log("📊 Total documentos en 'servicios':", total);
+
+    // 🔹 Ver un ejemplo de documento
+    const uno = await Servicio.findOne();
+    console.log("📄 Ejemplo:", uno);
+
+    return res.json({
+      database: mongoose.connection.name,
+      collection: Servicio.collection.name,
+      total,
+      ejemplo: uno,
+    });
+  } catch (err) {
+    console.error("❌ Error en debugServicios:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 export const importarXML = async (req, res) => {
   try {
     if (!req.file) {

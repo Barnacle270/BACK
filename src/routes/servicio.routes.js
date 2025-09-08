@@ -4,6 +4,7 @@ import {
   actualizarCamposManuales,
   actualizarEstadoFacturacion,
   anularServicio,
+  debugServicios,
   editarServicio,
   eliminarServicio,
   importarXML,
@@ -34,7 +35,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// RUTAS ESPECÍFICAS ANTES
+// ======================
+// 📌 RUTAS ESPECÍFICAS
+// ======================
 router.post('/importar', upload.single('xml'), importarXML);
 router.post('/importar-masivo', upload.array('xmls'), importarXMLMasivo);
 
@@ -44,16 +47,19 @@ router.put('/:id/editar', editarServicio);
 router.put('/:id/facturacion', actualizarEstadoFacturacion);
 router.put('/facturacion/lote', recepcionarLoteServicios);
 
+// ======================
+// 📌 RUTAS FIJAS (antes de /:id)
+// ======================
 router.get('/pendientes', listarServiciosPendientes);
-router.get('/sin-factura', obtenerServiciosSinFacturar); // DEBE IR ANTES DE /:id
-
+router.get('/sin-factura', obtenerServiciosSinFacturar);
+router.get('/debug', debugServicios); // ⚡️ debug ahora funciona bien
 router.get('/', listarServiciosPorFecha);
 
-// RUTA CON PARÁMETRO AL FINAL
+// ======================
+// 📌 RUTAS DINÁMICAS (al final)
+// ======================
 router.put('/:id/anular', anularServicio);
 router.get('/:id', obtenerServicioPorId);
 router.delete('/:id', eliminarServicio);
-
-
 
 export default router;

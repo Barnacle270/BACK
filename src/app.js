@@ -20,6 +20,7 @@ import lecturaRoutes from './routes/lectura.routes.js';
 import mantenimientoRoutes from './routes/mantenimiento.routes.js';
 
 
+
 const app = express();
 
 // Configuración de CORS dinámica basada en entorno
