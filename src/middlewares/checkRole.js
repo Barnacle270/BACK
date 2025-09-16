@@ -1,32 +1,38 @@
-export const checkRole = (roles) => {
-  return async (req, res, next) => {
-    const token = req.cookies.token || req.headers['authorization']?.split(' ')[1];
+import jwt from "jsonwebtoken";
+import { TOKEN_SECRET } from "../config.js";
+import Employee from "../models/employee.model.js";
 
-    console.log("Token recibido en checkRole:", token);  // Verifica que el token se esté recibiendo en checkRole
+export const checkRole = (roles = []) => {
+  return async (req, res, next) => {
+    let token = null;
+
+    // 🔐 Solo tomar access token del header
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
 
     if (!token) {
-      return res.status(401).json({ message: "No token found, authorization denied" });
+      return res.status(401).json({ message: "No access token, authorization denied" });
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-      const user = await Employee.findById(decoded.id);
+      const decoded = jwt.verify(token, TOKEN_SECRET);
 
-      console.log("Usuario autorizado:", user);  // Verifica los datos del usuario autorizado
-
+      const user = await Employee.findById(decoded.id).select("id role dni name");
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
 
+      // 🔎 Verifica rol
       if (!roles.includes(user.role)) {
-        console.log("Acceso denegado, rol insuficiente:", user.role);  // Verifica el rol del usuario
         return res.status(403).json({ message: "Access denied: insufficient permissions" });
       }
 
+      // ✅ Usuario autorizado
       req.user = user;
-      next(); // Continúa al siguiente middleware o controlador
+      next();
     } catch (error) {
-      console.error("Error en checkRole:", error);
+      console.error("Error en checkRole:", error.message);
       return res.status(401).json({ message: "Token is not valid" });
     }
   };

@@ -1,39 +1,35 @@
-import jwt from 'jsonwebtoken';
-import { TOKEN_SECRET } from '../config.js';
-import Employee from '../models/employee.model.js';
+import jwt from "jsonwebtoken";
+import { TOKEN_SECRET } from "../config.js";
+import Employee from "../models/employee.model.js";
 
-export const validatedni = (req, res, next) => {
-  const { token } = req.cookies;
+export const validatedni = async (req, res, next) => {
+  let token = null;
 
-  console.log(req.cookies)
+  // Buscar en Authorization header (Bearer)
+  if (req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  }
 
-  if (!token)
-    return res.status(401).json({ message: 'Unauthorized' })
+  if (!token) {
+    return res.status(401).json({ message: "No access token, unauthorized" });
+  }
 
-  jwt.verify(token, TOKEN_SECRET, async (err, decodedToken) => {
-    if (err)
-      return res.status(403).json({ message: 'Invalid token' });
-      
-    // Busca el usuario en la base de datos usando el ID del token decodificado
-    try {
-      const user = await Employee.findById( decodedToken.id);
-      
-      if (!user)
-        return res.status(404).json({ message: 'User not found' });
+  try {
+    const decoded = jwt.verify(token, TOKEN_SECRET);
 
-      // Añade el DNI del usuario a req.user.dni si está presente
-      if (user.dni) {
-        req.user = {
-          ...decodedToken, // Conserva la información del token decodificado
-          dni: user.dni // Añade el DNI del usuario
-        };
-      } else {
-        req.user = decodedToken; // Si el usuario no tiene DNI, usa solo la información del token decodificado
-      }
+    // Busca el usuario en la base de datos usando el ID del token
+    const user = await Employee.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-      next();
-    } catch (error) {
-      return res.status(500).json({ message: 'Internal Server Error' });
-    }
-  });
+    // Añade el DNI del usuario al request
+    req.user = {
+      ...decoded,
+      dni: user.dni,
+    };
+
+    next();
+  } catch (error) {
+    console.error("❌ validatedni error:", error.message);
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
 };
