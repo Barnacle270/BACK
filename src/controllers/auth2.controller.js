@@ -3,17 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createAccessToken } from "../libs/jwt.js";
 import { TOKEN_SECRET } from "../config.js";
-
-// Helper para setear la cookie
-const setTokenCookie = (res, token) => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: isProduction, // Solo secure en producción
-    sameSite: isProduction ? 'None' : 'Lax', // None en prod, Lax en dev
-    maxAge: 24 * 60 * 60 * 1000, // 1 día
-  });
-};
+import { setTokenCookie, clearTokenCookie } from "../libs/cookies.js"; // 👈 importas tus helpers
 
 // REGISTRAR USUARIO
 export const register = async (req, res) => {
@@ -39,13 +29,14 @@ export const register = async (req, res) => {
       dni: userSaved.dni,
     });
 
-    setTokenCookie(res, token);
+    setTokenCookie(res, token); // 👈 usar helper
 
     res.json({
       id: userSaved._id,
       dni: userSaved.dni,
       name: userSaved.name,
       role: userSaved.role,
+      token, // opcional, por si quieres fallback en localStorage
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -72,13 +63,14 @@ export const login = async (req, res) => {
       dni: userFound.dni,
     });
 
-    setTokenCookie(res, token);
+    setTokenCookie(res, token); // 👈 usar helper
 
     res.json({
       id: userFound._id,
       name: userFound.name,
       dni: userFound.dni,
       role: userFound.role,
+      token,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -88,17 +80,17 @@ export const login = async (req, res) => {
 // VERIFICAR TOKEN
 export const verifyToken = async (req, res) => {
   const { token } = req.cookies;
-  if (!token) {
-    return res.sendStatus(401);
-  }
+  if (!token) return res.sendStatus(401);
 
   jwt.verify(token, TOKEN_SECRET, async (error, user) => {
     if (error) {
+      clearTokenCookie(res); // 👈 si el token no es válido, borro la cookie
       return res.sendStatus(401);
     }
 
     const userFound = await Employee.findById(user.id);
     if (!userFound) {
+      clearTokenCookie(res); // 👈 si el usuario no existe, borro la cookie
       return res.sendStatus(401);
     }
 
@@ -113,17 +105,6 @@ export const verifyToken = async (req, res) => {
 
 // LOGOUT
 export const logout = (req, res) => {
-  // Para logout, reseteamos la cookie vacía
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  res.cookie("token", "", {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'None' : 'Lax',
-    maxAge: 0, // Eliminar la cookie
-  });
-
+  clearTokenCookie(res); // 👈 usar helper
   return res.sendStatus(200);
 };
-
-
