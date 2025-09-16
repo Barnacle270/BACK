@@ -25,7 +25,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://administrativo.transportej.com',
   'http://administrativo.transportej.com',
-  'https://backendtjboletas.onrender.com'
+  'https://back-2vwn.onrender.com'
 ];
 
 app.use(cors({

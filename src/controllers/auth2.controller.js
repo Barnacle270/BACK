@@ -1,42 +1,43 @@
 import Employee from "../models/employee.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { createAccessToken } from "../libs/jwt.js";
-import { TOKEN_SECRET } from "../config.js";
-import { setTokenCookie, clearTokenCookie } from "../libs/cookies.js"; // 👈 importas tus helpers
+import { TOKEN_SECRET, REFRESH_SECRET } from "../config.js";
+import { setTokenCookie, clearTokenCookie } from "../libs/cookies.js";
+
+// helpers internos
+const createAccessToken = (payload) => {
+  return jwt.sign(payload, TOKEN_SECRET, { expiresIn: "15m" }); // corto
+};
+
+const createRefreshToken = (payload) => {
+  return jwt.sign(payload, REFRESH_SECRET, { expiresIn: "7d" }); // largo
+};
 
 // REGISTRAR USUARIO
 export const register = async (req, res) => {
   const { dni, name, password, role } = req.body;
-
   try {
     const userFound = await Employee.findOne({ dni });
     if (userFound) return res.status(400).json(["El DNI ya existe"]);
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const newEmployee = new Employee({
-      dni,
-      name,
-      password: passwordHash,
-      role,
-    });
-
+    const newEmployee = new Employee({ dni, name, password: passwordHash, role });
     const userSaved = await newEmployee.save();
 
-    const token = await createAccessToken({
-      id: userSaved._id,
-      dni: userSaved.dni,
-    });
+    const accessToken = createAccessToken({ id: userSaved._id, dni: userSaved.dni });
+    const refreshToken = createRefreshToken({ id: userSaved._id, dni: userSaved.dni });
 
-    setTokenCookie(res, token); // 👈 usar helper
+    setTokenCookie(res, refreshToken); // refresh en cookie segura
 
     res.json({
-      id: userSaved._id,
-      dni: userSaved.dni,
-      name: userSaved.name,
-      role: userSaved.role,
-      token, // opcional, por si quieres fallback en localStorage
+      user: {
+        id: userSaved._id,
+        dni: userSaved.dni,
+        name: userSaved.name,
+        role: userSaved.role,
+      },
+      accessToken,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -48,63 +49,67 @@ export const login = async (req, res) => {
   try {
     const { dni, password } = req.body;
     const userFound = await Employee.findOne({ dni });
-
-    if (!userFound)
-      return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
+    if (!userFound) return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
 
     const isMatch = await bcrypt.compare(password, userFound.password);
-    if (!isMatch) {
-      return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
-    }
+    if (!isMatch) return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
 
-    const token = await createAccessToken({
-      id: userFound._id,
-      name: userFound.name,
-      dni: userFound.dni,
-    });
+    const accessToken = createAccessToken({ id: userFound._id, dni: userFound.dni });
+    const refreshToken = createRefreshToken({ id: userFound._id, dni: userFound.dni });
 
-    setTokenCookie(res, token); // 👈 usar helper
+    setTokenCookie(res, refreshToken);
 
     res.json({
-      id: userFound._id,
-      name: userFound.name,
-      dni: userFound.dni,
-      role: userFound.role,
-      token,
+      user: {
+        id: userFound._id,
+        name: userFound.name,
+        dni: userFound.dni,
+        role: userFound.role,
+      },
+      accessToken,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// VERIFICAR TOKEN
-export const verifyToken = async (req, res) => {
-  const { token } = req.cookies;
-  if (!token) return res.sendStatus(401);
+// REFRESH ACCESS TOKEN
+export const refresh = (req, res) => {
+  const refreshToken = req.cookies?.token;
+  if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
 
-  jwt.verify(token, TOKEN_SECRET, async (error, user) => {
+  jwt.verify(refreshToken, REFRESH_SECRET, async (error, user) => {
     if (error) {
-      clearTokenCookie(res); // 👈 si el token no es válido, borro la cookie
-      return res.sendStatus(401);
+      clearTokenCookie(res);
+      return res.status(403).json({ message: "Invalid refresh token" });
     }
 
     const userFound = await Employee.findById(user.id);
     if (!userFound) {
-      clearTokenCookie(res); // 👈 si el usuario no existe, borro la cookie
-      return res.sendStatus(401);
+      clearTokenCookie(res);
+      return res.status(403).json({ message: "User not found" });
     }
 
-    return res.json({
-      id: userFound._id,
-      name: userFound.name,
-      dni: userFound.dni,
-      role: userFound.role,
-    });
+    const newAccessToken = createAccessToken({ id: userFound._id, dni: userFound.dni });
+    res.json({ accessToken: newAccessToken });
+  });
+};
+
+// VERIFY (requiere access token en header → authRequired)
+export const verifyToken = async (req, res) => {
+  const userFound = await Employee.findById(req.user.id);
+  if (!userFound) return res.status(401).json({ message: "User not found" });
+
+  return res.json({
+    id: userFound._id,
+    name: userFound.name,
+    dni: userFound.dni,
+    role: userFound.role,
   });
 };
 
 // LOGOUT
 export const logout = (req, res) => {
-  clearTokenCookie(res); // 👈 usar helper
+  clearTokenCookie(res);
   return res.sendStatus(200);
 };
