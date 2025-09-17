@@ -93,7 +93,13 @@ const servicioSchema = new mongoose.Schema({
   numeroFactura: {
     type: String,
     default: null
-  }
+  },
+
+  estadoCarguio: {
+  type: String,
+  enum: ['PENDIENTE', 'COMPLETADO', ''], // "" cuando aún no se solicita
+  default: ''
+}
 
 }, {
   timestamps: true

@@ -237,7 +237,8 @@ export const listarServiciosPendientes = async (req, res) => {
       'conductorDevolucion',
       'vencimientoMemo',
       'fechaDevolucion',
-      'horaCita'
+      'horaCita',
+      "estadoCarguio"
     ]);
 
     res.status(200).json(serviciosPendientes);
@@ -246,6 +247,39 @@ export const listarServiciosPendientes = async (req, res) => {
     res.status(500).json({ mensaje: 'Error al obtener los servicios pendientes', error: error.message });
   }
 };
+
+// Actualizar estado de carguío (para enviar al stacker)
+export const actualizarEstadoCarguio = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estadoCarguio } = req.body;
+
+    // Validar estado permitido
+    const estadosValidos = ["", "PENDIENTE", "COMPLETADO"];
+    if (!estadosValidos.includes(estadoCarguio)) {
+      return res.status(400).json({ message: "Estado de carguío no válido" });
+    }
+
+    const servicio = await Servicio.findByIdAndUpdate(
+      id,
+      { estadoCarguio },
+      { new: true } // devuelve el objeto actualizado
+    );
+
+    if (!servicio) {
+      return res.status(404).json({ message: "Servicio no encontrado" });
+    }
+
+    res.json({
+      message: "Estado de carguío actualizado correctamente",
+      servicio,
+    });
+  } catch (error) {
+    console.error("Error al actualizar estado de carguío:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 
 export const marcarComoDevuelto = async (req, res) => {
   try {
@@ -572,5 +606,33 @@ export const anularServicio = async (req, res) => {
   } catch (error) {
     console.error('Error al anular servicio:', error);
     res.status(500).json({ mensaje: 'Error al anular servicio', error: error.message });
+  }
+};
+
+// Servicios pendientes de carguío (para el stacker)
+export const listarServiciosPendientesCarguio = async (req, res) => {
+  try {
+    const servicios = await Servicio.find({
+      estado: "PENDIENTE",        // aún no devueltos
+      estadoCarguio: "PENDIENTE", // ya solicitados al stacker
+    }).select([
+      "cliente",
+      "numeroContenedor",
+      "terminalDevolucion",
+      "placaDevolucion",
+      "conductorDevolucion",
+      "vencimientoMemo",
+      "fechaDevolucion",
+      "horaCita",
+      "estadoCarguio"
+    ]);
+
+    res.status(200).json(servicios);
+  } catch (error) {
+    console.error("Error al listar servicios pendientes de carguío:", error);
+    res.status(500).json({
+      mensaje: "Error al obtener los servicios pendientes de carguío",
+      error: error.message,
+    });
   }
 };

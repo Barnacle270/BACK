@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import {
   actualizarCamposManuales,
+  actualizarEstadoCarguio,
   actualizarEstadoFacturacion,
   anularServicio,
   debugServicios,
@@ -10,6 +11,7 @@ import {
   importarXML,
   importarXMLMasivo,
   listarServiciosPendientes,
+  listarServiciosPendientesCarguio,
   listarServiciosPorFecha,
   marcarComoDevuelto,
   obtenerServicioPorId,
@@ -51,6 +53,8 @@ router.put('/facturacion/lote', recepcionarLoteServicios);
 // 📌 RUTAS FIJAS (antes de /:id)
 // ======================
 router.get('/pendientes', listarServiciosPendientes);
+router.put("/:id/carguio", actualizarEstadoCarguio);
+router.get('/pendientes-carguio', listarServiciosPendientesCarguio); // 👈 nueva ruta
 router.get('/sin-factura', obtenerServiciosSinFacturar);
 router.get('/debug', debugServicios); // ⚡️ debug ahora funciona bien
 router.get('/', listarServiciosPorFecha);
