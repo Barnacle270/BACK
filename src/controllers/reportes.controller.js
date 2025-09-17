@@ -23,7 +23,7 @@ export const generarReporteServicios = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Servicios");
 
-    // Definir columnas (todos los campos de tu versión original)
+    // Definir columnas
     worksheet.columns = [
       { header: "Tipo de Guía", key: "tipoGuia", width: 18 },
       { header: "Guía", key: "numeroGuia", width: 15 },
@@ -63,7 +63,7 @@ export const generarReporteServicios = async (req, res) => {
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "4472C4" }, // Azul Office
+        fgColor: { argb: "4472C4" },
       };
       cell.border = {
         top: { style: "thin" },
@@ -108,9 +108,9 @@ export const generarReporteServicios = async (req, res) => {
       });
     });
 
-    // Estilos de filas de datos
+    // Estilos filas de datos
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // encabezado
+      if (rowNumber === 1) return;
       row.eachCell((cell) => {
         cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
         cell.border = {
@@ -122,11 +122,14 @@ export const generarReporteServicios = async (req, res) => {
       });
     });
 
-    // Autofiltro en encabezado
-    worksheet.autoFilter = {
-      from: "A1",
-      to: worksheet.getRow(1).lastCell.address,
-    };
+    // Autofiltro en encabezado (validado)
+    const lastCell = worksheet.getRow(1).lastCell;
+    if (lastCell) {
+      worksheet.autoFilter = {
+        from: "A1",
+        to: lastCell.address,
+      };
+    }
 
     // Enviar archivo
     res.setHeader("Content-Disposition", 'attachment; filename="reporte_servicios.xlsx"');
