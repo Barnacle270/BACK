@@ -1,5 +1,6 @@
-import Employee from '../models/employee.model.js';
-import bcrypt from 'bcryptjs';
+import Employee from "../models/employee.model.js";
+import bcrypt from "bcryptjs";
+
 // Crear un nuevo usuario
 export const crearUsuario = async (req, res) => {
   try {
@@ -14,11 +15,11 @@ export const crearUsuario = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role
+      role,
     });
 
     await nuevoEmpleado.save();
-    res.status(201).json({ message: 'Usuario creado exitosamente' });
+    res.status(201).json({ message: "Usuario creado exitosamente" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -27,13 +28,14 @@ export const crearUsuario = async (req, res) => {
 // Listar todos los usuarios
 export const listarUsuarios = async (req, res) => {
   try {
-    const usuarios = await Employee.find(); // puedes usar .find({ activo: true }) si solo quieres activos
+    const usuarios = await Employee.find().select("-password"); // nunca devolver hash
     res.json(usuarios);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
+// Actualizar datos de un usuario (para administradores)
 export const actualizarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,8 +50,11 @@ export const actualizarUsuario = async (req, res) => {
       delete actualizaciones.password;
     }
 
-    await Employee.findByIdAndUpdate(id, actualizaciones, { new: true });
-    res.json({ message: "Usuario actualizado correctamente" });
+    const updated = await Employee.findByIdAndUpdate(id, actualizaciones, {
+      new: true,
+    }).select("-password");
+
+    res.json({ message: "Usuario actualizado correctamente", user: updated });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -61,8 +66,31 @@ export const cambiarRol = async (req, res) => {
     const { id } = req.params;
     const { nuevoRol } = req.body;
 
-    await Employee.findByIdAndUpdate(id, { role: nuevoRol });
-    res.json({ message: 'Rol actualizado correctamente' });
+    const rolesValidos = [
+      "User",
+      "Administrador",
+      "Superadministrador",
+      "Coordinador",
+      "Almacen",
+    ];
+
+    if (!rolesValidos.includes(nuevoRol)) {
+      return res.status(400).json({
+        error: `Rol inválido. Debe ser uno de: ${rolesValidos.join(", ")}`,
+      });
+    }
+
+    const userUpdated = await Employee.findByIdAndUpdate(
+      id,
+      { role: nuevoRol },
+      { new: true }
+    ).select("-password");
+
+    if (!userUpdated) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({ message: "Rol actualizado correctamente", user: userUpdated });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -74,7 +102,7 @@ export const desactivarUsuario = async (req, res) => {
     const { id } = req.params;
 
     await Employee.findByIdAndUpdate(id, { activo: false });
-    res.json({ message: 'Usuario desactivado correctamente' });
+    res.json({ message: "Usuario desactivado correctamente" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -86,7 +114,33 @@ export const activarUsuario = async (req, res) => {
     const { id } = req.params;
 
     await Employee.findByIdAndUpdate(id, { activo: true });
-    res.json({ message: 'Usuario activado correctamente' });
+    res.json({ message: "Usuario activado correctamente" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// ✅ Nuevo: actualizar perfil propio (correo y/o contraseña)
+export const actualizarPerfil = async (req, res) => {
+  try {
+    const userId = req.user.id; // viene del token JWT
+    const { email, password } = req.body;
+    const actualizaciones = {};
+
+    if (email) actualizaciones.email = email;
+
+    if (password && password.trim() !== "") {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      actualizaciones.password = hashedPassword;
+    }
+
+    const updatedUser = await Employee.findByIdAndUpdate(
+      userId,
+      actualizaciones,
+      { new: true }
+    ).select("-password");
+
+    res.json({ message: "Perfil actualizado correctamente", user: updatedUser });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

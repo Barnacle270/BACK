@@ -15,18 +15,32 @@ const createRefreshToken = (payload) => {
 
 // REGISTRAR USUARIO
 export const register = async (req, res) => {
-  const { dni, name, password, role } = req.body;
+  const { dni, name, email, password, role } = req.body;
   try {
     const userFound = await Employee.findOne({ dni });
     if (userFound) return res.status(400).json(["El DNI ya existe"]);
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const newEmployee = new Employee({ dni, name, password: passwordHash, role });
+    const newEmployee = new Employee({
+      dni,
+      name,
+      email, // 👈 guardamos email
+      password: passwordHash,
+      role,
+    });
     const userSaved = await newEmployee.save();
 
-    const accessToken = createAccessToken({ id: userSaved._id, dni: userSaved.dni });
-    const refreshToken = createRefreshToken({ id: userSaved._id, dni: userSaved.dni });
+    const accessToken = createAccessToken({
+      id: userSaved._id,
+      dni: userSaved.dni,
+      role: userSaved.role,
+    });
+    const refreshToken = createRefreshToken({
+      id: userSaved._id,
+      dni: userSaved.dni,
+      role: userSaved.role,
+    });
 
     setTokenCookie(res, refreshToken); // refresh en cookie segura
 
@@ -36,6 +50,7 @@ export const register = async (req, res) => {
         dni: userSaved.dni,
         name: userSaved.name,
         role: userSaved.role,
+        email: userSaved.email, // 👈 devolvemos email
       },
       accessToken,
     });
@@ -49,13 +64,23 @@ export const login = async (req, res) => {
   try {
     const { dni, password } = req.body;
     const userFound = await Employee.findOne({ dni });
-    if (!userFound) return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
+    if (!userFound)
+      return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
 
     const isMatch = await bcrypt.compare(password, userFound.password);
-    if (!isMatch) return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
+    if (!isMatch)
+      return res.status(400).json(["El DNI o la contraseña son incorrectos"]);
 
-    const accessToken = createAccessToken({ id: userFound._id, dni: userFound.dni });
-    const refreshToken = createRefreshToken({ id: userFound._id, dni: userFound.dni });
+    const accessToken = createAccessToken({
+      id: userFound._id,
+      dni: userFound.dni,
+      role: userFound.role,
+    });
+    const refreshToken = createRefreshToken({
+      id: userFound._id,
+      dni: userFound.dni,
+      role: userFound.role,
+    });
 
     setTokenCookie(res, refreshToken);
 
@@ -65,6 +90,7 @@ export const login = async (req, res) => {
         name: userFound.name,
         dni: userFound.dni,
         role: userFound.role,
+        email: userFound.email, // 👈 devolvemos email
       },
       accessToken,
     });
@@ -76,7 +102,8 @@ export const login = async (req, res) => {
 // REFRESH ACCESS TOKEN
 export const refresh = (req, res) => {
   const refreshToken = req.cookies?.token;
-  if (!refreshToken) return res.status(401).json({ message: "No refresh token" });
+  if (!refreshToken)
+    return res.status(401).json({ message: "No refresh token" });
 
   jwt.verify(refreshToken, REFRESH_SECRET, async (error, user) => {
     if (error) {
@@ -90,7 +117,11 @@ export const refresh = (req, res) => {
       return res.status(403).json({ message: "User not found" });
     }
 
-    const newAccessToken = createAccessToken({ id: userFound._id, dni: userFound.dni });
+    const newAccessToken = createAccessToken({
+      id: userFound._id,
+      dni: userFound.dni,
+      role: userFound.role,
+    });
     res.json({ accessToken: newAccessToken });
   });
 };
@@ -98,13 +129,15 @@ export const refresh = (req, res) => {
 // VERIFY (requiere access token en header → authRequired)
 export const verifyToken = async (req, res) => {
   const userFound = await Employee.findById(req.user.id);
-  if (!userFound) return res.status(401).json({ message: "User not found" });
+  if (!userFound)
+    return res.status(401).json({ message: "User not found" });
 
   return res.json({
     id: userFound._id,
     name: userFound.name,
     dni: userFound.dni,
     role: userFound.role,
+    email: userFound.email, // 👈 devolvemos email
   });
 };
 
