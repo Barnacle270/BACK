@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { register, login, verifyToken, logout, refresh } from "../controllers/auth2.controller.js";
+import { login, verifyToken, logout, refresh } from "../controllers/auth2.controller.js";
 import { authRequired } from "../middlewares/validateToken.js";
 
 const router = Router();
 
 // públicas
-router.post("/v2/register", register);
-router.post("/v2/login", login);
+router.post("/v2/login",login);
 
 // protegidas
 router.get("/v2/verify", authRequired, verifyToken);
