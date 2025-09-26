@@ -17,6 +17,7 @@ import usuariosRoutes from './routes/usuarios.routes.js';
 import maquinariaRoutes from './routes/maquinaria.routes.js';
 import lecturaRoutes from './routes/lectura.routes.js';
 import mantenimientoRoutes from './routes/mantenimiento.routes.js';
+import googleSheetsRoutes from './routes/googleSheets.routes.js';
 
 const app = express();
 
@@ -68,6 +69,8 @@ app.use('/api', conductorRoutes);
 app.use('/api/maquinarias', maquinariaRoutes);
 app.use('/api/lecturas', lecturaRoutes);
 app.use('/api/mantenimientos', mantenimientoRoutes);
+
+app.use("/api/sheets", googleSheetsRoutes);
 
 // Ruta fallback para errores 404 en la API
 app.use((req, res) => {
